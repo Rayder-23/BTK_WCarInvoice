@@ -1,0 +1,95 @@
+<ui:FluentWindow x:Class="CarInvoice.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:views="clr-namespace:CarInvoice.Desktop.Views"
+        xmlns:vm="clr-namespace:CarInvoice.Desktop.ViewModels"
+        Title="{Binding Title}"
+        Width="1280" Height="800"
+        MinWidth="800" MinHeight="560"
+        WindowStartupLocation="Manual"
+        ExtendsContentIntoTitleBar="True"
+        Background="{StaticResource AppBackgroundBrush}"
+        Foreground="{StaticResource TextPrimaryBrush}"
+        FontFamily="{StaticResource BodyFont}"
+        Loaded="OnLoaded">
+  <Grid Background="{StaticResource AppBackgroundBrush}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <ui:TitleBar Title="{Binding Title}" Grid.Row="0"
+                 Background="{StaticResource SidebarBackgroundBrush}"
+                 Foreground="{StaticResource SidebarTextBrush}"
+                 FontFamily="{StaticResource DisplayFont}"/>
+
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="228"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- Kachi-iro navigation rail -->
+      <Border Background="{StaticResource SidebarBackgroundBrush}"
+              BorderThickness="0" Padding="10,8">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="CarInvoice" Style="{StaticResource BrandDisplayStyle}"/>
+            <TextBlock Text="車検証 · 和紙  ·  Invoice Desk" Style="{StaticResource BrandEyebrowStyle}"/>
+            <Border Style="{StaticResource SectionRuleStyle}"
+                    Background="{StaticResource SidebarHoverBrush}"
+                    Margin="8,0,8,14" Opacity="0.85"/>
+          </StackPanel>
+
+          <TextBlock DockPanel.Dock="Bottom"
+                     Text="Offline · Local SQLite"
+                     Style="{StaticResource BrandEyebrowStyle}"
+                     Margin="8,12,8,8" FontSize="10"/>
+
+          <StackPanel>
+            <ui:Button Content="Create Invoice" Icon="{ui:SymbolIcon DocumentAdd24}"
+                       Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                       Foreground="{StaticResource SidebarTextBrush}"
+                       FontFamily="{StaticResource BodyFont}"
+                       Command="{Binding NavigateCommand}" CommandParameter="Create" Margin="0,0,0,4"/>
+            <ui:Button Content="Vehicles &amp; History" Icon="{ui:SymbolIcon VehicleCar24}"
+                       Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                       Foreground="{StaticResource SidebarTextBrush}"
+                       FontFamily="{StaticResource BodyFont}"
+                       Command="{Binding NavigateCommand}" CommandParameter="Vehicles" Margin="0,0,0,4"/>
+            <ui:Button Content="Invoices Ledger" Icon="{ui:SymbolIcon DocumentBulletList24}"
+                       Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                       Foreground="{StaticResource SidebarTextBrush}"
+                       FontFamily="{StaticResource BodyFont}"
+                       Command="{Binding NavigateCommand}" CommandParameter="Invoices" Margin="0,0,0,4"/>
+            <ui:Button Content="Dictionaries &amp; Settings" Icon="{ui:SymbolIcon Settings24}"
+                       Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                       Foreground="{StaticResource SidebarTextBrush}"
+                       FontFamily="{StaticResource BodyFont}"
+                       Command="{Binding NavigateCommand}" CommandParameter="Settings"/>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Column="1" Background="{StaticResource AppBackgroundBrush}" Padding="16,12,16,10">
+        <ContentControl Content="{Binding CurrentPage}">
+          <ContentControl.Resources>
+            <DataTemplate DataType="{x:Type vm:CreateInvoiceViewModel}">
+              <views:CreateInvoiceView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:VehiclesViewModel}">
+              <views:VehiclesView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:InvoicesViewModel}">
+              <views:InvoicesView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+              <views:SettingsView/>
+            </DataTemplate>
+          </ContentControl.Resources>
+        </ContentControl>
+      </Border>
+    </Grid>
+  </Grid>
+</ui:FluentWindow>

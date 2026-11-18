@@ -1,0 +1,43 @@
+<UserControl x:Class="CarInvoice.Desktop.Views.InvoicesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:ctrl="clr-namespace:CarInvoice.Desktop.Controls"
+             Background="{StaticResource AppBackgroundBrush}"
+             Foreground="{StaticResource TextPrimaryBrush}"
+             FontFamily="{StaticResource BodyFont}">
+  <DockPanel>
+    <ctrl:PageHeader DockPanel.Dock="Top"
+                     Eyebrow="請求一覧  ·  LEDGER"
+                     Title="Invoices"
+                     Subtitle="Reopen generated Word documents or export the filtered ledger to Excel."/>
+
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+      <ui:Button DockPanel.Dock="Right" Content="Export Ledger to Excel" Command="{Binding ExportLedgerCommand}"
+                 Appearance="Secondary" Margin="8,0,0,0"/>
+      <ui:Button DockPanel.Dock="Right" Content="Open .docx" Command="{Binding OpenDocumentCommand}"
+                 CommandParameter="{Binding SelectedInvoice}" Margin="8,0,0,0" Appearance="Primary"/>
+      <ui:Button DockPanel.Dock="Right" Content="Search" Command="{Binding SearchCommand}"
+                 Appearance="Secondary" Margin="8,0,0,0"/>
+      <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+               ToolTip="Search invoice #, customer, chassis…"/>
+    </DockPanel>
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusMessage}"
+               Style="{StaticResource StatusMessageStyle}"/>
+
+    <DataGrid ItemsSource="{Binding Invoices}" SelectedItem="{Binding SelectedInvoice}"
+              IsReadOnly="True" MouseDoubleClick="OnRowDoubleClick">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNumber}" Width="130"/>
+        <DataGridTextColumn Header="DATE" Binding="{Binding InvoiceDate, StringFormat=\{0:yyyy-MM-dd\}}" Width="110"/>
+        <DataGridTextColumn Header="CUSTOMER" Binding="{Binding Customer.FullName}" Width="160"/>
+        <DataGridTextColumn Header="VEHICLE" Binding="{Binding Vehicle.Model}" Width="140"/>
+        <DataGridTextColumn Header="CHASSIS" Binding="{Binding Vehicle.ChassisNumber}" Width="110"/>
+        <DataGridTextColumn Header="TOTAL" Binding="{Binding TotalAmount, StringFormat=\{0:N2\}}" Width="100"/>
+        <DataGridTextColumn Header="CCY" Binding="{Binding Currency}" Width="70"/>
+        <DataGridCheckBoxColumn Header="DRAFT" Binding="{Binding IsDraft}" Width="70"/>
+        <DataGridTextColumn Header="DOCUMENT" Binding="{Binding GeneratedDocPath}" Width="*"/>
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

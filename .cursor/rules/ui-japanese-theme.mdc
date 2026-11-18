@@ -1,0 +1,152 @@
+---
+description: Enforce the Shaken & Washi Japanese Automotive UI theme for all CarInvoice Desktop UI work.
+alwaysApply: true
+---
+
+# Shaken & Washi — Japanese Automotive UI Theme
+
+Every future UI view, user control, dialog, style, or visual tweak in `CarInvoice.Desktop` **must** follow this theme. Source of truth: `CarInvoice.Desktop/Themes/JapaneseTheme.xaml`.
+
+## Aesthetic direction
+
+**Certificate-desk editorial** — calm washi paper (Gofun), indigo ink hierarchy (Ai / Ruri / Kachi), Japanese auction-sheet / 車検証 energy. Precise, quiet, professional. Not generic Fluent purple, not Inter/Segoe-only “AI dashboard.”
+
+Memorable cues:
+- JP · EN eyebrow labels (`車台番号  ·  CHASSIS PLATE`)
+- Cascadia Mono chassis plates in Ruri blue
+- Kachi-iro nav rail + table headers
+- Hairline Suna rules under page/section titles
+
+## Hard rules
+
+1. **Never hardcode hex colors** (`#RRGGBB`, `#AARRGGBB`) in XAML or code-behind for UI chrome, text, borders, fills, or status banners. Hex belongs only in `JapaneseTheme.xaml`.
+2. Always reference theme resources: `{StaticResource BrushKey}` or `{DynamicResource BrushKey}`.
+3. Merge order in `App.xaml`: Wpf.Ui dictionaries first, then `Themes/JapaneseTheme.xaml`.
+4. **Never** call `SetSystemAccent()` / `ApplicationAccentColorManager.ApplySystemAccent()` — that pulls the Windows accent (often purple) onto Primary buttons. Startup must call `ApplicationAccentColorManager.Apply(Ai-iro, …)` + `IThemeService.SetAccent(Ai-iro)` as in `App.xaml.cs` (`#2B4C7E` / `#1F385E` / `#1D5B9E`).
+5. Chassis Code / Chassis Number inputs use **`ChassisTextBoxStyle`** (Cascadia Mono) inside **`ChassisPlateCardStyle`**.
+6. Status semantics are fixed:
+   - Duplicate chassis / repair history → `DangerTextBrush` on `DangerBackgroundBrush` (+ `BannerTextStyle` / `DangerBannerStyle`)
+   - Clean / verified lookup → `SuccessTextBrush` on `SuccessBackgroundBrush` (+ `SuccessBadgeStyle`)
+   - Unmapped JP term / caution → `WarningTextBrush` on `WarningBackgroundBrush` (+ `WarningBannerStyle`)
+7. New windows / dialogs: root `AppBackgroundBrush`.
+8. Cards / panels / DataGrid bodies: `CardSurfaceBrush`. Nav rail + DataGrid headers: `SidebarBackgroundBrush`.
+9. Primary CTAs: Wpf.Ui `Appearance="Primary"` (accent locked to Ai-iro) or `PrimaryButtonStyle`. Secondary: `Appearance="Secondary"` or `SecondaryButtonStyle`.
+10. Do **not** invent one-off FontSize/FontFamily/Foreground for titles or labels — use the typography styles below.
+
+## Palette (semantic keys)
+
+| Role | Brush key | Hex | Japanese name |
+|------|-----------|-----|---------------|
+| Window background | `AppBackgroundBrush` | `#F7F6F2` | Gofun-iro |
+| Card / DataGrid surface | `CardSurfaceBrush` | `#FFFFFF` | Shiro-neri |
+| Subtle borders / dividers | `BorderSubtleBrush` | `#DCD9D0` | Suna-iro |
+| Nav rail & table headers | `SidebarBackgroundBrush` | `#1B2A4A` | Kachi-iro |
+| Nav / on-accent text | `SidebarTextBrush` | `#F7F6F2` | — |
+| Nav muted text | `SidebarMutedTextBrush` | `#B8C0CC` | — |
+| Nav hover wash | `SidebarHoverBrush` | `#332B4C7E` | — |
+| Primary CTA | `PrimaryAccentBrush` | `#2B4C7E` | Ai-iro |
+| Primary CTA hover | `PrimaryAccentHoverBrush` | `#1F385E` | — |
+| Text on primary CTA | `OnAccentTextBrush` | `#FFFFFF` | — |
+| Selection / auto-fill tint | `SelectionTintBrush` | `#E8F0F8` | Asagi-iro |
+| Chassis focus accent | `ChassisHighlightBrush` | `#1D5B9E` | Ruri-iro |
+| Danger text | `DangerTextBrush` | `#C83E37` | Shu-iro |
+| Danger background | `DangerBackgroundBrush` | `#FDECEC` | — |
+| Success text | `SuccessTextBrush` | `#2E6F40` | Tokiwa-iro |
+| Success background | `SuccessBackgroundBrush` | `#EAF5EE` | — |
+| Warning text | `WarningTextBrush` | `#D9822B` | Yamabuki-iro |
+| Warning background | `WarningBackgroundBrush` | `#FDF3E7` | — |
+| Primary text | `TextPrimaryBrush` | `#1F2421` | Sumi-iro |
+| Secondary / label text | `TextSecondaryBrush` | `#5C646D` | Nezumi-iro |
+
+## Typography
+
+### Font families (resource keys)
+
+| Key | Stack | Use |
+|-----|--------|-----|
+| `DisplayFont` | Yu Gothic UI, Meiryo UI, Segoe UI Variable Display, Segoe UI | Brand, page titles, section titles, eyebrows, DataGrid headers |
+| `BodyFont` | Yu Gothic UI, Meiryo UI, Segoe UI Variable Text, Segoe UI | Body, fields, buttons, default `UserControl`/`Window` |
+| `ChassisMonoFont` | Cascadia Mono, Consolas, Courier New | Chassis plates, totals, raw source monospace panes |
+
+### Text styles (always prefer these)
+
+| Style | Role | Notes |
+|-------|------|--------|
+| `BrandDisplayStyle` | Nav wordmark “CarInvoice” | ~22 Bold, SidebarText |
+| `BrandEyebrowStyle` | Nav tagline | e.g. `車検証 · 和紙  ·  Invoice Desk` |
+| `EyebrowStyle` | Small JP/EN certificate label | Ruri, SemiBold ~11 — above titles |
+| `PageTitleStyle` | Page H1 | Display ~26 SemiBold, Sumi |
+| `PageSubtitleStyle` | One-line page support | Nezumi, wrap, ~13 |
+| `SectionTitleStyle` | In-card section title | Display ~16 SemiBold |
+| `SectionHeaderStyle` | Alias of section title + margin | Prefer `SectionHeader` control |
+| `SectionRuleStyle` | 1px hairline divider | `BorderSubtleBrush` |
+| `FieldLabelStyle` | Form labels | SemiBold ~11 Nezumi; pattern `English` or `JP  ·  English` |
+| `BodyTextStyle` | Long copy | Sumi, LineHeight 20 |
+| `MutedTextStyle` | Meta / secondary lines | Nezumi ~12 |
+| `MonoPlateStyle` | Chassis display (read-only) | Cascadia + Ruri |
+| `DetailTitleStyle` | Slide-out detail make/name | Display ~20 |
+| `StatusMessageStyle` | Footer status line | Nezumi ~12 |
+| `BannerTextStyle` | Text inside danger/success/warning banners | SemiBold ~12.5 |
+| `ToolbarCaptionStyle` | Tiny caption before toolbars | e.g. `SOURCE` |
+
+### Label copy convention
+
+- Eyebrows / section labels: **`日本語  ·  ENGLISH`** (middle dot `·`, thin spaces).
+- Examples already in product: `伝票作成  ·  CREATE`, `車台番号  ·  CHASSIS PLATE`, `型式  ·  Chassis Code`, `顧客  ·  BUYER`, `金額  ·  PRICING`, `請求一覧  ·  LEDGER`, `用語集  ·  GLOSSARY`.
+- DataGrid column headers: short **UPPERCASE English** (CODE, NUMBER, MAKE…).
+
+## Layout components (reuse; do not reinvent)
+
+### `Controls/PageHeader`
+
+Properties: `Eyebrow`, `Title`, `Subtitle`.
+
+Use at the **top of every main view**. Renders eyebrow → page title → subtitle → hairline rule.
+
+### `Controls/SectionHeader`
+
+Properties: `Eyebrow`, `Title`, `TrailingContent`.
+
+Use inside cards for section breaks. Renders Ruri **left ink tick** + eyebrow + title + optional trailing (e.g. Translate button) + hairline rule.
+
+### Surface styles
+
+| Style | Use |
+|-------|-----|
+| `ChassisPlateCardStyle` | Chassis Code/Number block — Asagi fill, Ruri left border `4,1,1,1` |
+| `CardSurfaceStyle` | White cards / toolbars / detail panes |
+| `SuccessBadgeStyle` | Auto-lookup badge |
+| `DangerBannerStyle` | Duplicate chassis alert |
+| `WarningBannerStyle` | Glossary / caution callouts |
+| `ChassisTextBoxStyle` | Chassis inputs only |
+
+### Shell / navigation
+
+- Left rail: `SidebarBackgroundBrush`, brand via `BrandDisplayStyle` + `BrandEyebrowStyle`.
+- Content host: `AppBackgroundBrush` with comfortable padding (~16,12).
+- Title bar: Kachi background, Sidebar text.
+- Window fit: clamp to `SystemParameters.WorkArea` on startup (`MainWindow.FitToWorkingArea`) — do not hardcode oversized mins that break small screens.
+
+## Scrolling
+
+- Prefer **one page `ScrollViewer`** for long forms (Create Invoice). Avoid nested ScrollViewers that steal the wheel.
+- Multiline TextBoxes may scroll locally only while they still have overflow; otherwise forward wheel to the page scroller (see `CreateInvoiceView`).
+
+## Accent lock (Wpf.Ui)
+
+Primary buttons use system accent resources. App startup **must** keep:
+
+```csharp
+ApplicationAccentColorManager.Apply(AccentAiIro, AccentAiIro, AccentAiIroHover, AccentRuriIro);
+theme.SetTheme(ApplicationTheme.Light);
+theme.SetAccent(AccentAiIro);
+```
+
+Never reintroduce `ApplySystemAccent()`.
+
+## When editing UI
+
+1. New page → start with `PageHeader`; new in-card block → `SectionHeader`.
+2. New color role → add Color + Brush to `JapaneseTheme.xaml` **and** a row in the palette table above before using it.
+3. Prefer `{StaticResource ...}` over leftover Wpf.Ui generic brushes for surfaces/text this theme defines.
+4. Keep motion subtle if added; hierarchy comes from type + ink ticks + rules, not glow/pills/purple gradients.
