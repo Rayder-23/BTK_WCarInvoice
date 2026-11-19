@@ -9,6 +9,7 @@
         MinWidth="800" MinHeight="560"
         WindowStartupLocation="Manual"
         ExtendsContentIntoTitleBar="True"
+        Icon="pack://application:,,,/CarInvoice;component/Assets/app.ico"
         Background="{StaticResource AppBackgroundBrush}"
         Foreground="{StaticResource TextPrimaryBrush}"
         FontFamily="{StaticResource BodyFont}"
@@ -19,60 +20,103 @@
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
 
+    <!-- Light button glyphs on frosted wash (no BlurEffect — Fluent uses tint, not Gaussian) -->
     <ui:TitleBar Title="{Binding Title}" Grid.Row="0"
-                 Background="{StaticResource SidebarBackgroundBrush}"
+                 Background="{StaticResource TitleBarGradientBrush}"
                  Foreground="{StaticResource SidebarTextBrush}"
-                 FontFamily="{StaticResource DisplayFont}"/>
+                 ButtonsForeground="{StaticResource SidebarTextBrush}"
+                 ButtonsBackground="{StaticResource FrostGlassStrongBrush}"
+                 FontFamily="{StaticResource DisplayFont}">
+      <ui:TitleBar.Icon>
+        <ui:ImageIcon Source="pack://application:,,,/CarInvoice;component/Assets/logo-128.png"
+                      Width="26" Height="26"/>
+      </ui:TitleBar.Icon>
+    </ui:TitleBar>
 
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="228"/>
+        <ColumnDefinition Width="220"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
 
-      <!-- Kachi-iro navigation rail -->
-      <Border Background="{StaticResource SidebarBackgroundBrush}"
-              BorderThickness="0" Padding="10,8">
+      <!-- Kachi-iro navigation rail with indigo flare -->
+      <Border BorderThickness="0" Padding="10,6">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="{StaticResource SidebarBackgroundColor}" Offset="0"/>
+            <GradientStop Color="{StaticResource SidebarGradientMidColor}" Offset="0.4"/>
+            <GradientStop Color="{StaticResource SidebarGradientHighlightColor}" Offset="0.7"/>
+            <GradientStop Color="{StaticResource SidebarGradientDeepColor}" Offset="1"/>
+          </LinearGradientBrush>
+        </Border.Background>
         <DockPanel>
           <StackPanel DockPanel.Dock="Top">
-            <TextBlock Text="CarInvoice" Style="{StaticResource BrandDisplayStyle}"/>
-            <TextBlock Text="車検証 · 和紙  ·  Invoice Desk" Style="{StaticResource BrandEyebrowStyle}"/>
+            <DockPanel Margin="4,10,4,0" LastChildFill="True">
+              <!-- Transparent PNG on the indigo rail (no baked background) -->
+              <Image DockPanel.Dock="Left"
+                     Source="pack://application:,,,/CarInvoice;component/Assets/logo-128.png"
+                     Width="52" Height="52"
+                     Margin="0,0,10,0"
+                     Stretch="Uniform"
+                     SnapsToDevicePixels="True"
+                     RenderOptions.BitmapScalingMode="HighQuality"
+                     VerticalAlignment="Center"/>
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="CarInvoice" Style="{StaticResource BrandDisplayStyle}" Margin="0,0,0,0"/>
+                <TextBlock Text="Invoice Desk" Style="{StaticResource BrandEyebrowStyle}" Margin="0,0,0,0"/>
+              </StackPanel>
+            </DockPanel>
             <Border Style="{StaticResource SectionRuleStyle}"
-                    Background="{StaticResource SidebarHoverBrush}"
-                    Margin="8,0,8,14" Opacity="0.85"/>
+                    Background="{StaticResource FrostBorderBrush}"
+                    Margin="8,12,8,10" Opacity="0.9"/>
           </StackPanel>
 
-          <TextBlock DockPanel.Dock="Bottom"
-                     Text="Offline · Local SQLite"
-                     Style="{StaticResource BrandEyebrowStyle}"
-                     Margin="8,12,8,8" FontSize="10"/>
+          <Border DockPanel.Dock="Bottom"
+                  Style="{StaticResource FrostChromeStyle}"
+                  Padding="8,6"
+                  Margin="4,10,4,4">
+            <TextBlock Text="Offline · Local SQLite"
+                       Foreground="{StaticResource SidebarTextBrush}"
+                       FontFamily="{StaticResource DisplayFont}"
+                       FontSize="10"
+                       Opacity="0.95"/>
+          </Border>
 
+          <!-- In-app acrylic tint pills (translucent fill only — no BlurEffect) -->
           <StackPanel>
-            <ui:Button Content="Create Invoice" Icon="{ui:SymbolIcon DocumentAdd24}"
-                       Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                       Foreground="{StaticResource SidebarTextBrush}"
-                       FontFamily="{StaticResource BodyFont}"
-                       Command="{Binding NavigateCommand}" CommandParameter="Create" Margin="0,0,0,4"/>
-            <ui:Button Content="Vehicles &amp; History" Icon="{ui:SymbolIcon VehicleCar24}"
-                       Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                       Foreground="{StaticResource SidebarTextBrush}"
-                       FontFamily="{StaticResource BodyFont}"
-                       Command="{Binding NavigateCommand}" CommandParameter="Vehicles" Margin="0,0,0,4"/>
-            <ui:Button Content="Invoices Ledger" Icon="{ui:SymbolIcon DocumentBulletList24}"
-                       Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                       Foreground="{StaticResource SidebarTextBrush}"
-                       FontFamily="{StaticResource BodyFont}"
-                       Command="{Binding NavigateCommand}" CommandParameter="Invoices" Margin="0,0,0,4"/>
-            <ui:Button Content="Dictionaries &amp; Settings" Icon="{ui:SymbolIcon Settings24}"
-                       Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                       Foreground="{StaticResource SidebarTextBrush}"
-                       FontFamily="{StaticResource BodyFont}"
-                       Command="{Binding NavigateCommand}" CommandParameter="Settings"/>
+            <Border Style="{StaticResource FrostChromeStyle}" Margin="0,0,0,6">
+              <ui:Button Content="Create Invoice" Icon="{ui:SymbolIcon DocumentAdd24}"
+                         Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                         Foreground="{StaticResource SidebarTextBrush}"
+                         FontFamily="{StaticResource BodyFont}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Create"/>
+            </Border>
+            <Border Style="{StaticResource FrostChromeStyle}" Margin="0,0,0,6">
+              <ui:Button Content="Vehicles &amp; History" Icon="{ui:SymbolIcon VehicleCar24}"
+                         Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                         Foreground="{StaticResource SidebarTextBrush}"
+                         FontFamily="{StaticResource BodyFont}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Vehicles"/>
+            </Border>
+            <Border Style="{StaticResource FrostChromeStyle}" Margin="0,0,0,6">
+              <ui:Button Content="Invoices Ledger" Icon="{ui:SymbolIcon DocumentBulletList24}"
+                         Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                         Foreground="{StaticResource SidebarTextBrush}"
+                         FontFamily="{StaticResource BodyFont}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Invoices"/>
+            </Border>
+            <Border Style="{StaticResource FrostChromeStyle}">
+              <ui:Button Content="Dictionaries &amp; Settings" Icon="{ui:SymbolIcon Settings24}"
+                         Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                         Foreground="{StaticResource SidebarTextBrush}"
+                         FontFamily="{StaticResource BodyFont}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Settings"/>
+            </Border>
           </StackPanel>
         </DockPanel>
       </Border>
 
-      <Border Grid.Column="1" Background="{StaticResource AppBackgroundBrush}" Padding="16,12,16,10">
+      <Border Grid.Column="1" Background="{StaticResource AppBackgroundBrush}" Padding="14,8,14,8">
         <ContentControl Content="{Binding CurrentPage}">
           <ContentControl.Resources>
             <DataTemplate DataType="{x:Type vm:CreateInvoiceViewModel}">

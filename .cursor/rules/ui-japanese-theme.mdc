@@ -12,10 +12,11 @@ Every future UI view, user control, dialog, style, or visual tweak in `CarInvoic
 **Certificate-desk editorial** — calm washi paper (Gofun), indigo ink hierarchy (Ai / Ruri / Kachi), Japanese auction-sheet / 車検証 energy. Precise, quiet, professional. Not generic Fluent purple, not Inter/Segoe-only “AI dashboard.”
 
 Memorable cues:
-- JP · EN eyebrow labels (`車台番号  ·  CHASSIS PLATE`)
+- Short English eyebrows (`CREATE`, `CHASSIS PLATE`, `LEDGER`) — not bilingual JP · EN on every label
 - Cascadia Mono chassis plates in Ruri blue
-- Kachi-iro nav rail + table headers
+- Kachi-iro nav rail with **indigo gradient flare** + table headers
 - Hairline Suna rules under page/section titles
+- App logo (transparent PNG) beside **CarInvoice / Invoice Desk** on the nav rail
 
 ## Hard rules
 
@@ -24,14 +25,17 @@ Memorable cues:
 3. Merge order in `App.xaml`: Wpf.Ui dictionaries first, then `Themes/JapaneseTheme.xaml`.
 4. **Never** call `SetSystemAccent()` / `ApplicationAccentColorManager.ApplySystemAccent()` — that pulls the Windows accent (often purple) onto Primary buttons. Startup must call `ApplicationAccentColorManager.Apply(Ai-iro, …)` + `IThemeService.SetAccent(Ai-iro)` as in `App.xaml.cs` (`#2B4C7E` / `#1F385E` / `#1D5B9E`).
 5. Chassis Code / Chassis Number inputs use **`ChassisTextBoxStyle`** (Cascadia Mono) inside **`ChassisPlateCardStyle`**.
-6. Status semantics are fixed:
+6. File / folder path fields use **`PathTextBoxStyle`** (Consolas / Cascadia Mono, Sumi ink) — **never** Yu Gothic / `ChassisTextBoxStyle` on paths like `%LocalAppData%\CarInvoice\…`.
+7. Status semantics are fixed:
    - Duplicate chassis / repair history → `DangerTextBrush` on `DangerBackgroundBrush` (+ `BannerTextStyle` / `DangerBannerStyle`)
    - Clean / verified lookup → `SuccessTextBrush` on `SuccessBackgroundBrush` (+ `SuccessBadgeStyle`)
-   - Unmapped JP term / caution → `WarningTextBrush` on `WarningBackgroundBrush` (+ `WarningBannerStyle`)
-7. New windows / dialogs: root `AppBackgroundBrush`.
-8. Cards / panels / DataGrid bodies: `CardSurfaceBrush`. Nav rail + DataGrid headers: `SidebarBackgroundBrush`.
-9. Primary CTAs: Wpf.Ui `Appearance="Primary"` (accent locked to Ai-iro) or `PrimaryButtonStyle`. Secondary: `Appearance="Secondary"` or `SecondaryButtonStyle`.
-10. Do **not** invent one-off FontSize/FontFamily/Foreground for titles or labels — use the typography styles below.
+   - Unmapped JP term / caution / offline Outlook mode → `WarningTextBrush` on `WarningBackgroundBrush` (+ `WarningBannerStyle`)
+   - Classic Outlook connected → Tokiwa success badge (same success brushes)
+8. New windows / dialogs: root `AppBackgroundBrush`.
+9. Cards / panels / DataGrid bodies: `CardSurfaceBrush`. Nav rail uses **`SidebarGradientBrush`** (or equivalent gradient stops). Solid `SidebarBackgroundBrush` remains for flat needs; DataGrid headers use the theme header template (vertical Kachi wash).
+10. Primary CTAs: Wpf.Ui `Appearance="Primary"` (accent locked to Ai-iro) or `PrimaryButtonStyle`. Secondary: `Appearance="Secondary"` or `SecondaryButtonStyle`.
+11. Do **not** invent one-off FontSize/FontFamily/Foreground for titles or labels — use the typography styles below.
+12. **No WPF `BlurEffect` on Borders** for “frosted glass.” It blurs the control itself and looks muddy. Use **`FrostChromeStyle`** / translucent frost brushes only (Fluent-style in-app tint). True desktop Acrylic/Mica is out of scope unless explicitly requested.
 
 ## Palette (semantic keys)
 
@@ -40,7 +44,11 @@ Memorable cues:
 | Window background | `AppBackgroundBrush` | `#F7F6F2` | Gofun-iro |
 | Card / DataGrid surface | `CardSurfaceBrush` | `#FFFFFF` | Shiro-neri |
 | Subtle borders / dividers | `BorderSubtleBrush` | `#DCD9D0` | Suna-iro |
-| Nav rail & table headers | `SidebarBackgroundBrush` | `#1B2A4A` | Kachi-iro |
+| Nav rail solid / table base | `SidebarBackgroundBrush` | `#1B2A4A` | Kachi-iro |
+| Nav rail flare | `SidebarGradientBrush` | Kachi → mid `#243A62` → Ai `#2B4C7E` → deep `#121C33` | indigo wash |
+| Title bar flare | `TitleBarGradientBrush` | Kachi → mid → deep (horizontal) | — |
+| Frost on dark chrome | `FrostGlassBrush` / `FrostGlassStrongBrush` / `FrostChromeStyle` | `#2EFFFFFF` / `#55FFFFFF` | translucent Gofun |
+| Frost border | `FrostBorderBrush` | `#40FFFFFF` | — |
 | Nav / on-accent text | `SidebarTextBrush` | `#F7F6F2` | — |
 | Nav muted text | `SidebarMutedTextBrush` | `#B8C0CC` | — |
 | Nav hover wash | `SidebarHoverBrush` | `#332B4C7E` | — |
@@ -67,20 +75,23 @@ Memorable cues:
 | `DisplayFont` | Yu Gothic UI, Meiryo UI, Segoe UI Variable Display, Segoe UI | Brand, page titles, section titles, eyebrows, DataGrid headers |
 | `BodyFont` | Yu Gothic UI, Meiryo UI, Segoe UI Variable Text, Segoe UI | Body, fields, buttons, default `UserControl`/`Window` |
 | `ChassisMonoFont` | Cascadia Mono, Consolas, Courier New | Chassis plates, totals, raw source monospace panes |
+| Path fields | Consolas, Cascadia Mono, Courier New via `PathTextBoxStyle` | File/folder paths only |
 
 ### Text styles (always prefer these)
 
 | Style | Role | Notes |
 |-------|------|--------|
-| `BrandDisplayStyle` | Nav wordmark “CarInvoice” | ~22 Bold, SidebarText |
-| `BrandEyebrowStyle` | Nav tagline | e.g. `車検証 · 和紙  ·  Invoice Desk` |
-| `EyebrowStyle` | Small JP/EN certificate label | Ruri, SemiBold ~11 — above titles |
-| `PageTitleStyle` | Page H1 | Display ~26 SemiBold, Sumi |
-| `PageSubtitleStyle` | One-line page support | Nezumi, wrap, ~13 |
-| `SectionTitleStyle` | In-card section title | Display ~16 SemiBold |
+| `BrandDisplayStyle` | Nav wordmark “CarInvoice” | ~20 Bold, SidebarText; sit beside logo |
+| `BrandEyebrowStyle` | Nav tagline | `Invoice Desk` |
+| `EyebrowStyle` | Small certificate label | Ruri, SemiBold ~10 — English UPPERCASE |
+| `PageTitleStyle` | Page H1 | Display ~20 SemiBold, Sumi — **compact** |
+| `PageSubtitleStyle` | One-line page support | Nezumi ~12, LineHeight 16 |
+| `SectionTitleStyle` | In-card section title | Display ~14 SemiBold |
 | `SectionHeaderStyle` | Alias of section title + margin | Prefer `SectionHeader` control |
 | `SectionRuleStyle` | 1px hairline divider | `BorderSubtleBrush` |
-| `FieldLabelStyle` | Form labels | SemiBold ~11 Nezumi; pattern `English` or `JP  ·  English` |
+| `FieldLabelStyle` | Form labels | SemiBold ~11 Nezumi; English |
+| `PathTextBoxStyle` | Path TextBoxes | Consolas, Sumi — Settings paths |
+| `SourceMonoTextBoxStyle` | JP→EN / raw source pane | Chassis mono, stretch |
 | `BodyTextStyle` | Long copy | Sumi, LineHeight 20 |
 | `MutedTextStyle` | Meta / secondary lines | Nezumi ~12 |
 | `MonoPlateStyle` | Chassis display (read-only) | Cascadia + Ruri |
@@ -91,8 +102,10 @@ Memorable cues:
 
 ### Label copy convention
 
-- Eyebrows / section labels: **`日本語  ·  ENGLISH`** (middle dot `·`, thin spaces).
-- Examples already in product: `伝票作成  ·  CREATE`, `車台番号  ·  CHASSIS PLATE`, `型式  ·  Chassis Code`, `顧客  ·  BUYER`, `金額  ·  PRICING`, `請求一覧  ·  LEDGER`, `用語集  ·  GLOSSARY`.
+- **English-first.** Page / section eyebrows are short **UPPERCASE English** (`CREATE`, `CHASSIS PLATE`, `BUYER`, `PRICING`, `LEDGER`, `GLOSSARY`).
+- Do **not** prefix every header with Japanese (`伝票作成  ·  CREATE`, etc.) — that reads as decoration, not signal.
+- Japanese is fine only where it is the data itself (glossary JP term, raw auction text, Translate JP → EN).
+- Nav links stay English (`Create Invoice`, `Vehicles & History`, …).
 - DataGrid column headers: short **UPPERCASE English** (CODE, NUMBER, MAKE…).
 
 ## Layout components (reuse; do not reinvent)
@@ -101,13 +114,13 @@ Memorable cues:
 
 Properties: `Eyebrow`, `Title`, `Subtitle`.
 
-Use at the **top of every main view**. Renders eyebrow → page title → subtitle → hairline rule.
+Use at the **top of every main view**. **Compact:** eyebrow + title on **one row**, short subtitle, tight hairline (`Margin` ~0,0,0,8). Do not restore the tall stacked H1 block.
 
 ### `Controls/SectionHeader`
 
 Properties: `Eyebrow`, `Title`, `TrailingContent`.
 
-Use inside cards for section breaks. Renders Ruri **left ink tick** + eyebrow + title + optional trailing (e.g. Translate button) + hairline rule.
+**Compact:** eyebrow + title on one row with Ruri ink tick + tight rule. Prefer this over reinventing section chrome.
 
 ### Surface styles
 
@@ -115,17 +128,53 @@ Use inside cards for section breaks. Renders Ruri **left ink tick** + eyebrow + 
 |-------|-----|
 | `ChassisPlateCardStyle` | Chassis Code/Number block — Asagi fill, Ruri left border `4,1,1,1` |
 | `CardSurfaceStyle` | White cards / toolbars / detail panes |
-| `SuccessBadgeStyle` | Auto-lookup badge |
+| `FrostChromeStyle` | Translucent wash behind nav buttons / offline chip on dark chrome (**no BlurEffect**) |
+| `SuccessBadgeStyle` | Auto-lookup badge / Classic Outlook connected |
 | `DangerBannerStyle` | Duplicate chassis alert |
-| `WarningBannerStyle` | Glossary / caution callouts |
+| `WarningBannerStyle` | Glossary / offline email mode callouts |
 | `ChassisTextBoxStyle` | Chassis inputs only |
+| `PathTextBoxStyle` | Settings path fields |
+| `SourceTextExpanderStyle` | Collapsed JP→EN expander chrome |
+
+### Create Invoice page layout (locked)
+
+1. `PageHeader` (compact)
+2. SOURCE toolbar + Outlook status badge (Tokiwa if Classic running; Yamabuki offline)
+3. Chassis plate card
+4. **Buyer | Pricing** side-by-side cards (not a left/right source|fields split)
+5. **Vehicle** full-width card
+6. **JP → EN** raw source at the **bottom**, `Expander` **collapsed by default**; text box uses `SourceMonoTextBoxStyle` and must stretch/align under the section content
+7. Prefer one page `ScrollViewer`; forward wheel from nested multiline boxes when they have no overflow
 
 ### Shell / navigation
 
-- Left rail: `SidebarBackgroundBrush`, brand via `BrandDisplayStyle` + `BrandEyebrowStyle`.
-- Content host: `AppBackgroundBrush` with comfortable padding (~16,12).
-- Title bar: Kachi background, Sidebar text.
-- Window fit: clamp to `SystemParameters.WorkArea` on startup (`MainWindow.FitToWorkingArea`) — do not hardcode oversized mins that break small screens.
+- Left rail: **gradient** Kachi→Ai wash; brand = **logo** (`logo-128.png`) + `BrandDisplayStyle` + `BrandEyebrowStyle` (`Invoice Desk`).
+- Nav buttons: frosted tint pills (`FrostChromeStyle`) + light `SidebarTextBrush` — no Gaussian blur layers.
+- Title bar: `TitleBarGradientBrush`; **`ButtonsForeground` = `SidebarTextBrush`**, **`ButtonsBackground` = frost strong** so min/max/close stay readable on dark indigo.
+- Content host: `AppBackgroundBrush` with compact padding (~14,8).
+- Window fit: clamp to `SystemParameters.WorkArea` on startup (`MainWindow.FitToWorkingArea`).
+- Window / taskbar icon: `Assets/app.ico` via `ApplicationIcon` + `Icon="pack://application:,,,/CarInvoice;component/Assets/app.ico"`.
+
+### App logo assets
+
+| Path | Role |
+|------|------|
+| `Design/logo-master.png` | Transparent square master (≥1024) — edit here, not lossy copies |
+| `scripts/generate-logo-assets.py` | Regenerates derived files |
+| `Assets/logo-512.png` | README / large use |
+| `Assets/logo-128.png` | In-app (sidebar, title bar ImageIcon) |
+| `Assets/app.ico` | Multi-size 16–256 — exe, window, taskbar |
+
+- Keep PNGs **transparent** (no baked white/black plate). If UI needs a tile, wrap in XAML `Border`.
+- Pack URIs use assembly name **`CarInvoice`**: `pack://application:,,,/CarInvoice;component/Assets/…`
+- Prefer a **tight crop** in the master so 16/32 ICO frames read large on the taskbar.
+
+### DataGrids
+
+- `CanUserSortColumns="True"` by default; set `CanUserSort="False"` on action/delete columns.
+- Set `SortMemberPath` on nested bindings (e.g. `Customer.FullName`).
+- Column header template shows **⇅** when sortable, **▲** / **▼** when sorted — do not remove the sort glyphs.
+- Header background stays Kachi indigo wash from the theme template.
 
 ## Scrolling
 
@@ -146,7 +195,8 @@ Never reintroduce `ApplySystemAccent()`.
 
 ## When editing UI
 
-1. New page → start with `PageHeader`; new in-card block → `SectionHeader`.
+1. New page → start with compact `PageHeader`; new in-card block → compact `SectionHeader`.
 2. New color role → add Color + Brush to `JapaneseTheme.xaml` **and** a row in the palette table above before using it.
 3. Prefer `{StaticResource ...}` over leftover Wpf.Ui generic brushes for surfaces/text this theme defines.
-4. Keep motion subtle if added; hierarchy comes from type + ink ticks + rules, not glow/pills/purple gradients.
+4. Keep motion subtle if added; hierarchy comes from type + ink ticks + rules + indigo gradient, not glow/pills/purple gradients/`BlurEffect`.
+5. Do not reintroduce bilingual JP · EN eyebrows or Yu Gothic path fields.

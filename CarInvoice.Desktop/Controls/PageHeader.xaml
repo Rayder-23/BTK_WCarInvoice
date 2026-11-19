@@ -2,14 +2,21 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Name="Root">
-  <StackPanel Margin="0,0,0,16">
-    <TextBlock Text="{Binding Eyebrow, ElementName=Root}"
-               Style="{StaticResource EyebrowStyle}"/>
-    <TextBlock Text="{Binding Title, ElementName=Root}"
-               Style="{StaticResource PageTitleStyle}"/>
+  <StackPanel Margin="0,0,0,8">
+    <DockPanel LastChildFill="True">
+      <TextBlock DockPanel.Dock="Left"
+                 Text="{Binding Eyebrow, ElementName=Root}"
+                 Style="{StaticResource EyebrowStyle}"
+                 VerticalAlignment="Bottom"
+                 Margin="0,0,10,2"
+                 Visibility="{Binding Eyebrow, ElementName=Root, Converter={StaticResource NullOrEmptyToVis}}"/>
+      <TextBlock Text="{Binding Title, ElementName=Root}"
+                 Style="{StaticResource PageTitleStyle}"
+                 VerticalAlignment="Bottom"/>
+    </DockPanel>
     <TextBlock Text="{Binding Subtitle, ElementName=Root}"
                Style="{StaticResource PageSubtitleStyle}"
                Visibility="{Binding Subtitle, ElementName=Root, Converter={StaticResource NullOrEmptyToVis}}"/>
-    <Border Style="{StaticResource SectionRuleStyle}" Margin="0,12,0,0"/>
+    <Border Style="{StaticResource SectionRuleStyle}" Margin="0,6,0,0"/>
   </StackPanel>
 </UserControl>

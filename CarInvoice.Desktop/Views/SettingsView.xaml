@@ -8,11 +8,11 @@
              FontFamily="{StaticResource BodyFont}">
   <ScrollViewer Padding="0,0,4,0" VerticalScrollBarVisibility="Auto">
     <StackPanel>
-      <ctrl:PageHeader Eyebrow="設定  ·  DICTIONARIES"
+      <ctrl:PageHeader Eyebrow="SETTINGS"
                        Title="Dictionaries &amp; Settings"
                        Subtitle="Paths, chassis lookups, and the offline Japanese glossary — editable without redeploying."/>
 
-      <ctrl:SectionHeader Eyebrow="保存先  ·  PATHS" Title="Paths &amp; Preferences"/>
+      <ctrl:SectionHeader Eyebrow="PATHS" Title="Paths &amp; Preferences"/>
       <Border Style="{StaticResource CardSurfaceStyle}" Margin="0,0,0,16">
         <Grid>
           <Grid.ColumnDefinitions>
@@ -23,20 +23,24 @@
           </Grid.RowDefinitions>
 
           <TextBlock Text="Word Template" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
-          <TextBox Grid.Column="1" Text="{Binding TemplatePath, UpdateSourceTrigger=PropertyChanged}" Margin="8,4"/>
+          <TextBox Grid.Column="1" Text="{Binding TemplatePath, UpdateSourceTrigger=PropertyChanged}"
+                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"/>
           <ui:Button Grid.Column="2" Content="Browse" Command="{Binding BrowseTemplateCommand}"
                      Appearance="Secondary" Margin="8,0,0,0"/>
 
           <TextBlock Grid.Row="1" Text="Output Folder" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
-          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" Margin="8,4"/>
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}"
+                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"/>
           <ui:Button Grid.Row="1" Grid.Column="2" Content="Browse" Command="{Binding BrowseOutputCommand}"
                      Appearance="Secondary" Margin="8,0,0,0"/>
 
           <TextBlock Grid.Row="2" Text="Backup Folder" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
-          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BackupFolder, UpdateSourceTrigger=PropertyChanged}" Margin="8,4"/>
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BackupFolder, UpdateSourceTrigger=PropertyChanged}"
+                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"/>
 
           <TextBlock Grid.Row="3" Text="Database" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
-          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding DatabasePath}" IsReadOnly="True" Margin="8,4"/>
+          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding DatabasePath}" IsReadOnly="True"
+                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"/>
           <ui:Button Grid.Row="3" Grid.Column="2" Content="Backup Now" Command="{Binding BackupNowCommand}"
                      Appearance="Secondary" Margin="8,0,0,0"/>
 
@@ -47,7 +51,7 @@
       <ui:Button Content="Save Settings" Command="{Binding SaveSettingsCommand}" Appearance="Primary"
                  HorizontalAlignment="Left" Margin="0,0,0,28"/>
 
-      <ctrl:SectionHeader Eyebrow="型式  ·  CHASSIS LOOKUPS" Title="Chassis Code Dictionary"/>
+      <ctrl:SectionHeader Eyebrow="CHASSIS" Title="Chassis Code Dictionary"/>
       <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
         <TextBox Width="100" Margin="0,0,6,0" Text="{Binding NewChassisCode, UpdateSourceTrigger=PropertyChanged}"
                  Style="{StaticResource ChassisTextBoxStyle}" FontSize="13" ToolTip="Code"/>
@@ -58,14 +62,14 @@
         <ui:Button Content="Add" Command="{Binding AddChassisCommand}" Appearance="Primary"/>
       </StackPanel>
       <DataGrid ItemsSource="{Binding ChassisLookups}" IsReadOnly="True"
-                Height="200" Margin="0,0,0,28">
+                Height="200" Margin="0,0,0,28" CanUserSortColumns="True">
         <DataGrid.Columns>
-          <DataGridTextColumn Header="CODE" Binding="{Binding ChassisCode}" Width="100"/>
-          <DataGridTextColumn Header="MAKE" Binding="{Binding DefaultMake}" Width="120"/>
-          <DataGridTextColumn Header="MODEL" Binding="{Binding DefaultModel}" Width="180"/>
-          <DataGridTextColumn Header="CC" Binding="{Binding DefaultEngineCc}" Width="70"/>
-          <DataGridTextColumn Header="FUEL" Binding="{Binding DefaultFuelType}" Width="100"/>
-          <DataGridTemplateColumn Header="" Width="90">
+          <DataGridTextColumn Header="CODE" Binding="{Binding ChassisCode}" SortMemberPath="ChassisCode" Width="100"/>
+          <DataGridTextColumn Header="MAKE" Binding="{Binding DefaultMake}" SortMemberPath="DefaultMake" Width="120"/>
+          <DataGridTextColumn Header="MODEL" Binding="{Binding DefaultModel}" SortMemberPath="DefaultModel" Width="180"/>
+          <DataGridTextColumn Header="CC" Binding="{Binding DefaultEngineCc}" SortMemberPath="DefaultEngineCc" Width="70"/>
+          <DataGridTextColumn Header="FUEL" Binding="{Binding DefaultFuelType}" SortMemberPath="DefaultFuelType" Width="100"/>
+          <DataGridTemplateColumn Header="" Width="90" CanUserSort="False">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <ui:Button Content="Delete"
@@ -77,24 +81,24 @@
         </DataGrid.Columns>
       </DataGrid>
 
-      <ctrl:SectionHeader Eyebrow="用語集  ·  GLOSSARY" Title="Japanese → English"/>
+      <ctrl:SectionHeader Eyebrow="GLOSSARY" Title="Japanese → English"/>
       <Border Style="{StaticResource WarningBannerStyle}" Margin="0,0,0,10">
         <TextBlock Text="Unmapped auction terms can be added here anytime — no code changes required."
                    Style="{StaticResource BannerTextStyle}"
                    Foreground="{StaticResource WarningTextBrush}"/>
       </Border>
       <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-        <TextBox Width="140" Margin="0,0,6,0" Text="{Binding NewJapanese, UpdateSourceTrigger=PropertyChanged}" ToolTip="日本語"/>
+        <TextBox Width="140" Margin="0,0,6,0" Text="{Binding NewJapanese, UpdateSourceTrigger=PropertyChanged}" ToolTip="Japanese term"/>
         <TextBox Width="200" Margin="0,0,6,0" Text="{Binding NewEnglish, UpdateSourceTrigger=PropertyChanged}" ToolTip="English"/>
         <ComboBox Width="160" Margin="0,0,6,0" ItemsSource="{Binding Categories}" SelectedItem="{Binding NewCategory}"/>
         <ui:Button Content="Add / Update" Command="{Binding AddGlossaryCommand}" Appearance="Primary"/>
       </StackPanel>
-      <DataGrid ItemsSource="{Binding Glossary}" IsReadOnly="True" Height="260">
+      <DataGrid ItemsSource="{Binding Glossary}" IsReadOnly="True" Height="260" CanUserSortColumns="True">
         <DataGrid.Columns>
-          <DataGridTextColumn Header="JAPANESE" Binding="{Binding JapaneseTerm}" Width="160"/>
-          <DataGridTextColumn Header="ENGLISH" Binding="{Binding EnglishTranslation}" Width="*"/>
-          <DataGridTextColumn Header="CATEGORY" Binding="{Binding Category}" Width="140"/>
-          <DataGridTemplateColumn Header="" Width="90">
+          <DataGridTextColumn Header="JAPANESE" Binding="{Binding JapaneseTerm}" SortMemberPath="JapaneseTerm" Width="160"/>
+          <DataGridTextColumn Header="ENGLISH" Binding="{Binding EnglishTranslation}" SortMemberPath="EnglishTranslation" Width="*"/>
+          <DataGridTextColumn Header="CATEGORY" Binding="{Binding Category}" SortMemberPath="Category" Width="140"/>
+          <DataGridTemplateColumn Header="" Width="90" CanUserSort="False">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <ui:Button Content="Delete"

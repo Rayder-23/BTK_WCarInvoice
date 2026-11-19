@@ -8,11 +8,11 @@
              FontFamily="{StaticResource BodyFont}">
   <DockPanel>
     <ctrl:PageHeader DockPanel.Dock="Top"
-                     Eyebrow="車両台帳  ·  REGISTRY"
+                     Eyebrow="REGISTRY"
                      Title="Vehicles &amp; History"
                      Subtitle="Search prior chassis plates, mileage, and auction history before you invoice."/>
 
-    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
       <ui:Button DockPanel.Dock="Right" Content="Export Excel" Command="{Binding ExportCommand}"
                  Appearance="Secondary" Margin="8,0,0,0"/>
       <ui:Button DockPanel.Dock="Right" Content="Search" Command="{Binding SearchCommand}"
@@ -30,17 +30,18 @@
       </Grid.ColumnDefinitions>
 
       <DataGrid ItemsSource="{Binding Vehicles}" SelectedItem="{Binding SelectedVehicle}"
-                IsReadOnly="True" MouseDoubleClick="OnRowDoubleClick">
+                IsReadOnly="True" MouseDoubleClick="OnRowDoubleClick"
+                CanUserSortColumns="True">
         <DataGrid.Columns>
-          <DataGridTextColumn Header="CODE" Binding="{Binding ChassisCode}" Width="100"/>
-          <DataGridTextColumn Header="NUMBER" Binding="{Binding ChassisNumber}" Width="120"/>
-          <DataGridTextColumn Header="MAKE" Binding="{Binding Make}" Width="100"/>
-          <DataGridTextColumn Header="MODEL" Binding="{Binding Model}" Width="140"/>
-          <DataGridTextColumn Header="YEAR" Binding="{Binding ManufacturingYear}" Width="70"/>
-          <DataGridTextColumn Header="MILEAGE" Binding="{Binding Mileage}" Width="90"/>
-          <DataGridTextColumn Header="COLOR" Binding="{Binding ExteriorColor}" Width="100"/>
-          <DataGridTextColumn Header="GRADE" Binding="{Binding AuctionGrade}" Width="70"/>
-          <DataGridTextColumn Header="UPDATED" Binding="{Binding UpdatedAt, StringFormat=\{0:yyyy-MM-dd\}}" Width="110"/>
+          <DataGridTextColumn Header="CODE" Binding="{Binding ChassisCode}" SortMemberPath="ChassisCode" Width="100"/>
+          <DataGridTextColumn Header="NUMBER" Binding="{Binding ChassisNumber}" SortMemberPath="ChassisNumber" Width="120"/>
+          <DataGridTextColumn Header="MAKE" Binding="{Binding Make}" SortMemberPath="Make" Width="100"/>
+          <DataGridTextColumn Header="MODEL" Binding="{Binding Model}" SortMemberPath="Model" Width="140"/>
+          <DataGridTextColumn Header="YEAR" Binding="{Binding ManufacturingYear}" SortMemberPath="ManufacturingYear" Width="70"/>
+          <DataGridTextColumn Header="MILEAGE" Binding="{Binding Mileage}" SortMemberPath="Mileage" Width="90"/>
+          <DataGridTextColumn Header="COLOR" Binding="{Binding ExteriorColor}" SortMemberPath="ExteriorColor" Width="100"/>
+          <DataGridTextColumn Header="GRADE" Binding="{Binding AuctionGrade}" SortMemberPath="AuctionGrade" Width="70"/>
+          <DataGridTextColumn Header="UPDATED" Binding="{Binding UpdatedAt, StringFormat=\{0:yyyy-MM-dd\}}" SortMemberPath="UpdatedAt" Width="110"/>
         </DataGrid.Columns>
       </DataGrid>
 
@@ -52,7 +53,7 @@
                      Appearance="Secondary"
                      Command="{Binding ShowDetailsCommand}" CommandParameter="{x:Null}" Margin="0,0,0,12"/>
           <StackPanel DataContext="{Binding SelectedVehicle}">
-            <TextBlock Text="明細  ·  DETAIL" Style="{StaticResource EyebrowStyle}"/>
+            <TextBlock Text="DETAIL" Style="{StaticResource EyebrowStyle}"/>
             <TextBlock Text="{Binding Make, Mode=OneWay}" Style="{StaticResource DetailTitleStyle}"/>
             <TextBlock Text="{Binding Model, Mode=OneWay}" Style="{StaticResource PageSubtitleStyle}" Margin="0,0,0,10"/>
             <TextBlock Style="{StaticResource MonoPlateStyle}">
@@ -65,7 +66,7 @@
             <TextBlock Text="{Binding Mileage, StringFormat=Mileage · {0}}" Style="{StaticResource MutedTextStyle}"/>
             <TextBlock Text="{Binding ExteriorColor, StringFormat=Color · {0}}" Style="{StaticResource MutedTextStyle}"/>
             <TextBlock Text="{Binding FuelType, StringFormat=Fuel · {0}}" Style="{StaticResource MutedTextStyle}"/>
-            <TextBlock Text="History Notes  ·  修復歴" Style="{StaticResource FieldLabelStyle}" Margin="0,16,0,5"/>
+            <TextBlock Text="History Notes" Style="{StaticResource FieldLabelStyle}" Margin="0,16,0,5"/>
             <TextBlock Text="{Binding HistoryNotes}" Style="{StaticResource BodyTextStyle}"/>
           </StackPanel>
         </DockPanel>

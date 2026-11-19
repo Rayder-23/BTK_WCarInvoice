@@ -14,8 +14,20 @@ public partial class CreateInvoiceView : UserControl
 
     private void OnDragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Effects = DragDropEffects.None;
+        if (e.Data.GetDataPresent(DataFormats.FileDrop)
+            && e.Data.GetData(DataFormats.FileDrop) is string[] files
+            && files.Any(IsSupportedDropFile))
+        {
+            e.Effects = DragDropEffects.Copy;
+        }
         e.Handled = true;
+    }
+
+    private static bool IsSupportedDropFile(string path)
+    {
+        var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+        return ext is ".eml" or ".msg" or ".xlsx";
     }
 
     private void OnDrop(object sender, DragEventArgs e)
@@ -23,7 +35,21 @@ public partial class CreateInvoiceView : UserControl
         if (DataContext is not CreateInvoiceViewModel vm) return;
         if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
-        vm.ApplyDroppedFile(files[0]);
+
+        // Prefer first .eml/.msg (New Outlook Save As / Classic), then Excel.
+        var preferred = files.FirstOrDefault(f =>
+        {
+            var ext = System.IO.Path.GetExtension(f).ToLowerInvariant();
+            return ext is ".eml" or ".msg";
+        }) ?? files[0];
+
+        vm.ApplyDroppedFile(preferred);
+    }
+
+    private void OnOutlookBadgeClick(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is CreateInvoiceViewModel vm)
+            vm.RefreshOutlookStatusCommand.Execute(null);
     }
 
     /// <summary>

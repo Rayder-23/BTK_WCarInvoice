@@ -12,20 +12,57 @@
              PreviewMouseWheel="OnPreviewMouseWheel">
   <DockPanel>
     <ctrl:PageHeader DockPanel.Dock="Top"
-                     Eyebrow="伝票作成  ·  CREATE"
+                     Eyebrow="CREATE"
                      Title="Create Invoice"
-                     Subtitle="Pull from Outlook or auction sheets, normalize the chassis plate, then generate the Word 納品書."/>
+                     Subtitle="Pull from Outlook or auction sheets, normalize the chassis plate, then generate the Word invoice."/>
 
     <!-- Source bar -->
     <Border DockPanel.Dock="Top" Style="{StaticResource CardSurfaceStyle}" Padding="12,10" Margin="0,0,0,12">
-      <DockPanel>
-        <TextBlock DockPanel.Dock="Left" Text="SOURCE" Style="{StaticResource ToolbarCaptionStyle}"/>
-        <StackPanel Orientation="Horizontal">
+      <DockPanel LastChildFill="True">
+        <TextBlock DockPanel.Dock="Left" Text="SOURCE" Style="{StaticResource ToolbarCaptionStyle}" Margin="0,0,10,0"/>
+
+        <!-- Outlook availability badge -->
+        <Border DockPanel.Dock="Right"
+                Style="{StaticResource SuccessBadgeStyle}"
+                Padding="10,5"
+                Margin="12,0,0,0"
+                VerticalAlignment="Center"
+                Cursor="Hand"
+                ToolTip="{Binding OutlookStatusToolTip}"
+                Visibility="{Binding IsClassicOutlookReady, Converter={StaticResource BoolToVis}}"
+                MouseLeftButtonUp="OnOutlookBadgeClick">
+          <TextBlock Text="{Binding OutlookStatusLabel}"
+                     Foreground="{StaticResource SuccessTextBrush}"
+                     FontFamily="{StaticResource BodyFont}"
+                     FontSize="11" FontWeight="SemiBold"/>
+        </Border>
+        <Border DockPanel.Dock="Right"
+                Style="{StaticResource WarningBannerStyle}"
+                Padding="10,5"
+                Margin="12,0,0,0"
+                VerticalAlignment="Center"
+                Cursor="Hand"
+                ToolTip="{Binding OutlookStatusToolTip}"
+                Visibility="{Binding IsOfflineOutlookMode, Converter={StaticResource BoolToVis}}"
+                MouseLeftButtonUp="OnOutlookBadgeClick">
+          <TextBlock Text="{Binding OutlookStatusLabel}"
+                     Foreground="{StaticResource WarningTextBrush}"
+                     FontFamily="{StaticResource BodyFont}"
+                     FontSize="11" FontWeight="SemiBold"/>
+        </Border>
+
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
           <ui:Button Content="Load from Outlook" Icon="{ui:SymbolIcon Mail24}" Appearance="Primary"
-                     Command="{Binding LoadFromOutlookCommand}" Margin="0,0,8,0"/>
+                     Command="{Binding LoadFromOutlookCommand}" Margin="0,0,8,0"
+                     ToolTip="Requires Classic Outlook already running (never auto-started)"/>
+          <ui:Button Content="Paste Email Text" Icon="{ui:SymbolIcon ClipboardPaste24}"
+                     Appearance="Secondary"
+                     Command="{Binding PasteEmailTextCommand}" Margin="0,0,8,0"
+                     ToolTip="Paste copied email body from New Outlook (Ctrl+A / Ctrl+C), then extract chassis"/>
           <ui:Button Content="Drop .msg/.eml" Icon="{ui:SymbolIcon DocumentArrowDown24}"
                      Appearance="Secondary"
-                     Command="{Binding DropMessageFileCommand}" Margin="0,0,8,0"/>
+                     Command="{Binding DropMessageFileCommand}" Margin="0,0,8,0"
+                     ToolTip="Pick a .msg (Classic) or .eml (New Outlook Save As) — or drag onto this page"/>
           <ui:Button Content="Import from Excel" Icon="{ui:SymbolIcon DocumentTable24}"
                      Appearance="Secondary"
                      Command="{Binding ImportExcelRowCommand}" Margin="0,0,8,0"/>
@@ -43,8 +80,9 @@
                    Margin="0,0,8,0" Appearance="Primary"/>
         <ui:Button Content="Generate &amp; Open Word" Command="{Binding GenerateAndOpenCommand}"
                    Appearance="Secondary" Margin="0,0,8,0"/>
-        <ui:Button Content="Create Outlook Draft with Attachment" Command="{Binding CreateOutlookDraftCommand}"
-                   Appearance="Secondary"/>
+        <ui:Button Content="Email Invoice" Command="{Binding CreateOutlookDraftCommand}"
+                   Appearance="Secondary"
+                   ToolTip="Classic Outlook: draft with .docx attached. Otherwise opens mailto: and selects the file in Explorer."/>
       </StackPanel>
     </Border>
 
@@ -72,17 +110,17 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,10">
-              <TextBlock Text="車台番号  ·  CHASSIS PLATE" Style="{StaticResource EyebrowStyle}"/>
+              <TextBlock Text="CHASSIS PLATE" Style="{StaticResource EyebrowStyle}"/>
               <TextBlock Text="Identify the vehicle" Style="{StaticResource SectionTitleStyle}"/>
             </StackPanel>
 
             <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,0">
-              <TextBlock Text="型式  ·  Chassis Code" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBlock Text="Chassis Code" Style="{StaticResource FieldLabelStyle}"/>
               <TextBox Text="{Binding ChassisCode, UpdateSourceTrigger=PropertyChanged}"
                        Style="{StaticResource ChassisTextBoxStyle}"/>
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,8,0">
-              <TextBlock Text="番号  ·  Chassis Number" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBlock Text="Chassis Number" Style="{StaticResource FieldLabelStyle}"/>
               <TextBox Text="{Binding ChassisNumber, UpdateSourceTrigger=PropertyChanged}"
                        Style="{StaticResource ChassisTextBoxStyle}"/>
             </StackPanel>
@@ -104,47 +142,25 @@
           </Grid>
         </Border>
 
-        <Grid>
+        <!-- Buyer | Pricing side by side -->
+        <Grid Margin="0,0,0,12">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
           </Grid.ColumnDefinitions>
 
-          <!-- Raw JP / EN text -->
-          <Border Grid.Column="0" Style="{StaticResource CardSurfaceStyle}" Margin="0,0,8,0" Padding="14">
-            <DockPanel>
-              <ctrl:SectionHeader DockPanel.Dock="Top"
-                                  Eyebrow="原文  ·  SOURCE TEXT"
-                                  Title="Raw Email / Excel">
-                <ctrl:SectionHeader.TrailingContent>
-                  <ui:Button Content="Translate JP → EN" Command="{Binding TranslateJapaneseCommand}" Appearance="Primary"/>
-                </ctrl:SectionHeader.TrailingContent>
-              </ctrl:SectionHeader>
-              <TextBox x:Name="RawSourceTextBox"
-                       Text="{Binding RawSourceText, UpdateSourceTrigger=PropertyChanged}"
-                       AcceptsReturn="True" TextWrapping="Wrap"
-                       VerticalScrollBarVisibility="Auto"
-                       HorizontalScrollBarVisibility="Disabled"
-                       FontFamily="{StaticResource ChassisMonoFont}" FontSize="12.5"
-                       MinHeight="280" MaxHeight="480"
-                       Background="{StaticResource AppBackgroundBrush}"
-                       Foreground="{StaticResource TextPrimaryBrush}"
-                       BorderBrush="{StaticResource BorderSubtleBrush}"
-                       PreviewMouseWheel="OnChildPreviewMouseWheel"/>
-            </DockPanel>
-          </Border>
-
-          <!-- Structured fields -->
-          <Border Grid.Column="1" Style="{StaticResource CardSurfaceStyle}" Margin="8,0,0,0" Padding="14">
+          <Border Grid.Column="0" Style="{StaticResource CardSurfaceStyle}" Margin="0,0,6,0" Padding="14">
             <StackPanel>
-              <ctrl:SectionHeader Eyebrow="顧客  ·  BUYER" Title="Customer"/>
-              <Grid Margin="0,0,0,18">
+              <ctrl:SectionHeader Eyebrow="BUYER" Title="Customer"/>
+              <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                  <RowDefinition/><RowDefinition/><RowDefinition/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel Margin="0,0,6,10">
                   <TextBlock Text="Full Name" Style="{StaticResource FieldLabelStyle}"/>
@@ -167,72 +183,21 @@
                   <TextBox Text="{Binding CustomerAddress, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
               </Grid>
+            </StackPanel>
+          </Border>
 
-              <ctrl:SectionHeader Eyebrow="車両  ·  VEHICLE" Title="Vehicle Details"/>
-              <Grid Margin="0,0,0,18">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                  <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
-                </Grid.RowDefinitions>
-                <StackPanel Margin="0,0,6,10">
-                  <TextBlock Text="Make" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding Make, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Model" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Margin="0,0,6,10">
-                  <TextBlock Text="Grade / Trim" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding GradeTrim, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Year" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding ManufacturingYear, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="2" Margin="0,0,6,10">
-                  <TextBlock Text="Engine Cc" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding EngineCapacityCc, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="2" Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Color" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding ExteriorColor, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="3" Margin="0,0,6,10">
-                  <TextBlock Text="Fuel" Style="{StaticResource FieldLabelStyle}"/>
-                  <ComboBox ItemsSource="{Binding FuelTypes}" SelectedItem="{Binding FuelType}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="3" Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Transmission" Style="{StaticResource FieldLabelStyle}"/>
-                  <ComboBox ItemsSource="{Binding Transmissions}" SelectedItem="{Binding Transmission}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="4" Margin="0,0,6,10">
-                  <TextBlock Text="Mileage" Style="{StaticResource FieldLabelStyle}"/>
-                  <DockPanel>
-                    <ComboBox DockPanel.Dock="Right" Width="80" ItemsSource="{Binding MileageUnits}" SelectedItem="{Binding MileageUnit}"/>
-                    <TextBox Text="{Binding Mileage, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,6,0"/>
-                  </DockPanel>
-                </StackPanel>
-                <StackPanel Grid.Row="4" Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Auction Grade" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding AuctionGrade, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-              </Grid>
-
-              <TextBlock Text="History Notes  ·  修復歴" Style="{StaticResource FieldLabelStyle}"/>
-              <TextBox Text="{Binding HistoryNotes, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True"
-                       Height="72" TextWrapping="Wrap" Margin="0,0,0,18"
-                       PreviewMouseWheel="OnChildPreviewMouseWheel"/>
-
-              <ctrl:SectionHeader Eyebrow="金額  ·  PRICING" Title="Sale &amp; Tax"/>
+          <Border Grid.Column="1" Style="{StaticResource CardSurfaceStyle}" Margin="6,0,0,0" Padding="14">
+            <StackPanel>
+              <ctrl:SectionHeader Eyebrow="PRICING" Title="Sale &amp; Tax"/>
               <Grid>
                 <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                  <RowDefinition/><RowDefinition/><RowDefinition/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel Margin="0,0,6,10">
                   <TextBlock Text="Sale Price" Style="{StaticResource FieldLabelStyle}"/>
@@ -261,12 +226,137 @@
                   <TextBox Text="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
               </Grid>
-              <TextBlock Text="Invoice Notes" Style="{StaticResource FieldLabelStyle}" Margin="0,6,0,5"/>
-              <TextBox Text="{Binding InvoiceNotes, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="56"
-                       TextWrapping="Wrap" PreviewMouseWheel="OnChildPreviewMouseWheel"/>
+              <TextBlock Text="Invoice Notes" Style="{StaticResource FieldLabelStyle}" Margin="0,4,0,5"/>
+              <TextBox Text="{Binding InvoiceNotes, UpdateSourceTrigger=PropertyChanged}"
+                       AcceptsReturn="True" Height="56" TextWrapping="Wrap"
+                       HorizontalAlignment="Stretch"
+                       PreviewMouseWheel="OnChildPreviewMouseWheel"/>
             </StackPanel>
           </Border>
         </Grid>
+
+        <!-- Vehicle full width -->
+        <Border Style="{StaticResource CardSurfaceStyle}" Margin="0,0,0,12" Padding="14">
+          <StackPanel>
+            <ctrl:SectionHeader Eyebrow="VEHICLE" Title="Vehicle Details"/>
+            <Grid Margin="0,0,0,10">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <StackPanel Margin="0,0,8,10">
+                <TextBlock Text="Make" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding Make, UpdateSourceTrigger=PropertyChanged}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Margin="0,0,8,10">
+                <TextBlock Text="Model" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="2" Margin="0,0,8,10">
+                <TextBlock Text="Grade / Trim" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding GradeTrim, UpdateSourceTrigger=PropertyChanged}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="3" Margin="0,0,0,10">
+                <TextBlock Text="Year" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding ManufacturingYear, UpdateSourceTrigger=PropertyChanged}"/>
+              </StackPanel>
+
+              <StackPanel Grid.Row="1" Margin="0,0,8,10">
+                <TextBlock Text="Engine Cc" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding EngineCapacityCc, UpdateSourceTrigger=PropertyChanged}"/>
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,8,10">
+                <TextBlock Text="Color" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding ExteriorColor, UpdateSourceTrigger=PropertyChanged}"/>
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,8,10">
+                <TextBlock Text="Fuel" Style="{StaticResource FieldLabelStyle}"/>
+                <ComboBox ItemsSource="{Binding FuelTypes}" SelectedItem="{Binding FuelType}"/>
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="3" Margin="0,0,0,10">
+                <TextBlock Text="Transmission" Style="{StaticResource FieldLabelStyle}"/>
+                <ComboBox ItemsSource="{Binding Transmissions}" SelectedItem="{Binding Transmission}"/>
+              </StackPanel>
+
+              <StackPanel Grid.Row="2" Margin="0,0,8,0">
+                <TextBlock Text="Mileage" Style="{StaticResource FieldLabelStyle}"/>
+                <DockPanel>
+                  <ComboBox DockPanel.Dock="Right" Width="80"
+                            ItemsSource="{Binding MileageUnits}" SelectedItem="{Binding MileageUnit}"/>
+                  <TextBox Text="{Binding Mileage, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,6,0"/>
+                </DockPanel>
+              </StackPanel>
+              <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,8,0">
+                <TextBlock Text="Auction Grade" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding AuctionGrade, UpdateSourceTrigger=PropertyChanged}"/>
+              </StackPanel>
+            </Grid>
+            <TextBlock Text="History Notes" Style="{StaticResource FieldLabelStyle}"/>
+            <TextBox Text="{Binding HistoryNotes, UpdateSourceTrigger=PropertyChanged}"
+                     AcceptsReturn="True" Height="56" TextWrapping="Wrap"
+                     HorizontalAlignment="Stretch"
+                     PreviewMouseWheel="OnChildPreviewMouseWheel"/>
+          </StackPanel>
+        </Border>
+
+        <!-- JP → EN raw source: collapsed by default -->
+        <Border Style="{StaticResource CardSurfaceStyle}" Margin="0,0,0,4" Padding="14,10">
+          <Expander IsExpanded="False"
+                    Style="{StaticResource SourceTextExpanderStyle}"
+                    HorizontalContentAlignment="Stretch">
+            <Expander.Header>
+              <Grid Margin="4,0,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="3" Height="28" Margin="0,0,10,0"
+                        Background="{StaticResource ChassisHighlightBrush}"
+                        CornerRadius="1" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="JP → EN" Style="{StaticResource EyebrowStyle}" Margin="0"/>
+                  <TextBlock Text="Raw email / auction text"
+                             Style="{StaticResource SectionTitleStyle}"
+                             FontSize="15"/>
+                </StackPanel>
+              </Grid>
+            </Expander.Header>
+
+            <Grid Margin="13,12,0,0" HorizontalAlignment="Stretch">
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+              <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="False">
+                <TextBlock DockPanel.Dock="Left"
+                           Text="Paste or drop source text, then translate mapped Japanese terms."
+                           Style="{StaticResource MutedTextStyle}"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Margin="0,0,12,0"/>
+                <ui:Button DockPanel.Dock="Right"
+                           Content="Translate JP → EN"
+                           Command="{Binding TranslateJapaneseCommand}"
+                           Appearance="Primary"
+                           HorizontalAlignment="Right"/>
+              </DockPanel>
+              <TextBox x:Name="RawSourceTextBox"
+                       Grid.Row="1"
+                       Text="{Binding RawSourceText, UpdateSourceTrigger=PropertyChanged}"
+                       Style="{StaticResource SourceMonoTextBoxStyle}"
+                       HorizontalAlignment="Stretch"
+                       PreviewMouseWheel="OnChildPreviewMouseWheel"/>
+            </Grid>
+          </Expander>
+        </Border>
       </StackPanel>
     </ScrollViewer>
   </DockPanel>

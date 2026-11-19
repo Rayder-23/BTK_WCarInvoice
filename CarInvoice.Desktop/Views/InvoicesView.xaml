@@ -8,11 +8,11 @@
              FontFamily="{StaticResource BodyFont}">
   <DockPanel>
     <ctrl:PageHeader DockPanel.Dock="Top"
-                     Eyebrow="請求一覧  ·  LEDGER"
+                     Eyebrow="LEDGER"
                      Title="Invoices"
                      Subtitle="Reopen generated Word documents or export the filtered ledger to Excel."/>
 
-    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
       <ui:Button DockPanel.Dock="Right" Content="Export Ledger to Excel" Command="{Binding ExportLedgerCommand}"
                  Appearance="Secondary" Margin="8,0,0,0"/>
       <ui:Button DockPanel.Dock="Right" Content="Open .docx" Command="{Binding OpenDocumentCommand}"
@@ -26,17 +26,18 @@
                Style="{StaticResource StatusMessageStyle}"/>
 
     <DataGrid ItemsSource="{Binding Invoices}" SelectedItem="{Binding SelectedInvoice}"
-              IsReadOnly="True" MouseDoubleClick="OnRowDoubleClick">
+              IsReadOnly="True" MouseDoubleClick="OnRowDoubleClick"
+              CanUserSortColumns="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNumber}" Width="130"/>
-        <DataGridTextColumn Header="DATE" Binding="{Binding InvoiceDate, StringFormat=\{0:yyyy-MM-dd\}}" Width="110"/>
-        <DataGridTextColumn Header="CUSTOMER" Binding="{Binding Customer.FullName}" Width="160"/>
-        <DataGridTextColumn Header="VEHICLE" Binding="{Binding Vehicle.Model}" Width="140"/>
-        <DataGridTextColumn Header="CHASSIS" Binding="{Binding Vehicle.ChassisNumber}" Width="110"/>
-        <DataGridTextColumn Header="TOTAL" Binding="{Binding TotalAmount, StringFormat=\{0:N2\}}" Width="100"/>
-        <DataGridTextColumn Header="CCY" Binding="{Binding Currency}" Width="70"/>
-        <DataGridCheckBoxColumn Header="DRAFT" Binding="{Binding IsDraft}" Width="70"/>
-        <DataGridTextColumn Header="DOCUMENT" Binding="{Binding GeneratedDocPath}" Width="*"/>
+        <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNumber}" SortMemberPath="InvoiceNumber" Width="130"/>
+        <DataGridTextColumn Header="DATE" Binding="{Binding InvoiceDate, StringFormat=\{0:yyyy-MM-dd\}}" SortMemberPath="InvoiceDate" Width="110"/>
+        <DataGridTextColumn Header="CUSTOMER" Binding="{Binding Customer.FullName}" SortMemberPath="Customer.FullName" Width="160"/>
+        <DataGridTextColumn Header="VEHICLE" Binding="{Binding Vehicle.Model}" SortMemberPath="Vehicle.Model" Width="140"/>
+        <DataGridTextColumn Header="CHASSIS" Binding="{Binding Vehicle.ChassisNumber}" SortMemberPath="Vehicle.ChassisNumber" Width="110"/>
+        <DataGridTextColumn Header="TOTAL" Binding="{Binding TotalAmount, StringFormat=\{0:N2\}}" SortMemberPath="TotalAmount" Width="100"/>
+        <DataGridTextColumn Header="CCY" Binding="{Binding Currency}" SortMemberPath="Currency" Width="70"/>
+        <DataGridCheckBoxColumn Header="DRAFT" Binding="{Binding IsDraft}" SortMemberPath="IsDraft" Width="70"/>
+        <DataGridTextColumn Header="DOCUMENT" Binding="{Binding GeneratedDocPath}" SortMemberPath="GeneratedDocPath" Width="*"/>
       </DataGrid.Columns>
     </DataGrid>
   </DockPanel>

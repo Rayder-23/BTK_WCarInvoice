@@ -10,6 +10,9 @@
   <Color x:Key="CardSurfaceColor">#FFFFFF</Color>            <!-- Shiro-neri -->
   <Color x:Key="BorderSubtleColor">#DCD9D0</Color>           <!-- Suna-iro -->
   <Color x:Key="SidebarBackgroundColor">#1B2A4A</Color>      <!-- Kachi-iro -->
+  <Color x:Key="SidebarGradientMidColor">#243A62</Color>
+  <Color x:Key="SidebarGradientHighlightColor">#2B4C7E</Color> <!-- Ai wash -->
+  <Color x:Key="SidebarGradientDeepColor">#121C33</Color>
   <Color x:Key="PrimaryAccentColor">#2B4C7E</Color>          <!-- Ai-iro -->
   <Color x:Key="PrimaryAccentHoverColor">#1F385E</Color>
   <Color x:Key="SelectionTintColor">#E8F0F8</Color>          <!-- Asagi-iro -->
@@ -24,12 +27,26 @@
   <Color x:Key="TextSecondaryColor">#5C646D</Color>          <!-- Nezumi-iro -->
   <Color x:Key="SidebarTextColor">#F7F6F2</Color>
   <Color x:Key="SidebarMutedTextColor">#B8C0CC</Color>
+  <Color x:Key="FrostGlassColor">#2EFFFFFF</Color>            <!-- soft in-app acrylic tint -->
+  <Color x:Key="FrostGlassStrongColor">#55FFFFFF</Color>      <!-- readable wash for dark chrome -->
+  <Color x:Key="FrostBorderColor">#40FFFFFF</Color>
 
   <!-- Brushes -->
   <SolidColorBrush x:Key="AppBackgroundBrush" Color="{StaticResource AppBackgroundColor}"/>
   <SolidColorBrush x:Key="CardSurfaceBrush" Color="{StaticResource CardSurfaceColor}"/>
   <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtleColor}"/>
   <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource SidebarBackgroundColor}"/>
+  <LinearGradientBrush x:Key="SidebarGradientBrush" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Color="{StaticResource SidebarBackgroundColor}" Offset="0"/>
+    <GradientStop Color="{StaticResource SidebarGradientMidColor}" Offset="0.42"/>
+    <GradientStop Color="{StaticResource SidebarGradientHighlightColor}" Offset="0.72"/>
+    <GradientStop Color="{StaticResource SidebarGradientDeepColor}" Offset="1"/>
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="TitleBarGradientBrush" StartPoint="0,0" EndPoint="1,0">
+    <GradientStop Color="{StaticResource SidebarBackgroundColor}" Offset="0"/>
+    <GradientStop Color="{StaticResource SidebarGradientMidColor}" Offset="0.55"/>
+    <GradientStop Color="{StaticResource SidebarGradientDeepColor}" Offset="1"/>
+  </LinearGradientBrush>
   <SolidColorBrush x:Key="PrimaryAccentBrush" Color="{StaticResource PrimaryAccentColor}"/>
   <SolidColorBrush x:Key="PrimaryAccentHoverBrush" Color="{StaticResource PrimaryAccentHoverColor}"/>
   <SolidColorBrush x:Key="SelectionTintBrush" Color="{StaticResource SelectionTintColor}"/>
@@ -44,6 +61,9 @@
   <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
   <SolidColorBrush x:Key="SidebarTextBrush" Color="{StaticResource SidebarTextColor}"/>
   <SolidColorBrush x:Key="SidebarMutedTextBrush" Color="{StaticResource SidebarMutedTextColor}"/>
+  <SolidColorBrush x:Key="FrostGlassBrush" Color="{StaticResource FrostGlassColor}"/>
+  <SolidColorBrush x:Key="FrostGlassStrongBrush" Color="{StaticResource FrostGlassStrongColor}"/>
+  <SolidColorBrush x:Key="FrostBorderBrush" Color="{StaticResource FrostBorderColor}"/>
 
   <!-- Align common Wpf.Ui / system resources with Shaken & Washi -->
   <Color x:Key="SystemAccentColorPrimary">#2B4C7E</Color>
@@ -89,49 +109,73 @@
   <!-- Brand wordmark on nav rail -->
   <Style x:Key="BrandDisplayStyle" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-    <Setter Property="FontSize" Value="22"/>
+    <Setter Property="FontSize" Value="20"/>
     <Setter Property="FontWeight" Value="Bold"/>
     <Setter Property="Foreground" Value="{StaticResource SidebarTextBrush}"/>
-    <Setter Property="Margin" Value="8,14,8,2"/>
+    <Setter Property="Margin" Value="8,8,8,0"/>
   </Style>
 
   <Style x:Key="BrandEyebrowStyle" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontSize" Value="10"/>
     <Setter Property="FontWeight" Value="Normal"/>
     <Setter Property="Foreground" Value="{StaticResource SidebarMutedTextBrush}"/>
-    <Setter Property="Margin" Value="8,0,8,18"/>
+    <Setter Property="Margin" Value="8,0,8,10"/>
   </Style>
 
-  <!-- Small JP/EN certificate label above titles -->
+  <!--
+    In-app frost (Fluent guidance): translucent fill + hairline border.
+    Do NOT use WPF BlurEffect on Borders — it softens the control itself and looks muddy.
+    True desktop Acrylic needs DWM SystemBackdrop; for nav chrome use this solid-tint wash.
+  -->
+  <Style x:Key="FrostChromeStyle" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource FrostGlassStrongBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource FrostBorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+  </Style>
+
+  <!-- File / folder paths: Consolas, not Yu Gothic (keeps C:\… readable) -->
+  <Style x:Key="PathTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+    <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, Courier New"/>
+    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    <Setter Property="CaretBrush" Value="{StaticResource TextPrimaryBrush}"/>
+    <Setter Property="Padding" Value="8,7"/>
+  </Style>
+
+  <!-- Small certificate label above titles -->
   <Style x:Key="EyebrowStyle" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontSize" Value="10"/>
     <Setter Property="FontWeight" Value="SemiBold"/>
     <Setter Property="Foreground" Value="{StaticResource ChassisHighlightBrush}"/>
-    <Setter Property="Margin" Value="0,0,0,2"/>
+    <Setter Property="Margin" Value="0,0,0,0"/>
   </Style>
 
   <Style x:Key="PageTitleStyle" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-    <Setter Property="FontSize" Value="26"/>
+    <Setter Property="FontSize" Value="20"/>
     <Setter Property="FontWeight" Value="SemiBold"/>
     <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-    <Setter Property="Margin" Value="0,0,0,2"/>
+    <Setter Property="Margin" Value="0"/>
   </Style>
 
   <Style x:Key="PageSubtitleStyle" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
-    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FontSize" Value="12"/>
     <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
     <Setter Property="TextWrapping" Value="Wrap"/>
     <Setter Property="Margin" Value="0,2,0,0"/>
-    <Setter Property="LineHeight" Value="20"/>
+    <Setter Property="LineHeight" Value="16"/>
   </Style>
 
   <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-    <Setter Property="FontSize" Value="16"/>
+    <Setter Property="FontSize" Value="14"/>
     <Setter Property="FontWeight" Value="SemiBold"/>
     <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
   </Style>
@@ -226,6 +270,31 @@
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="CornerRadius" Value="8"/>
     <Setter Property="Padding" Value="16"/>
+  </Style>
+
+  <!-- Collapsible source / JP→EN panel -->
+  <Style x:Key="SourceTextExpanderStyle" TargetType="Expander">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    <Setter Property="ExpandDirection" Value="Down"/>
+  </Style>
+
+  <Style x:Key="SourceMonoTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+    <Setter Property="FontFamily" Value="{StaticResource ChassisMonoFont}"/>
+    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="AcceptsReturn" Value="True"/>
+    <Setter Property="TextWrapping" Value="Wrap"/>
+    <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+    <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    <Setter Property="MinHeight" Value="160"/>
+    <Setter Property="MaxHeight" Value="320"/>
+    <Setter Property="Background" Value="{StaticResource AppBackgroundBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
   </Style>
 
   <Style x:Key="SuccessBadgeStyle" TargetType="Border">
@@ -378,7 +447,7 @@
     </Setter>
   </Style>
 
-  <!-- DataGrid: Kachi-iro headers, Asagi selection -->
+  <!-- DataGrid: Kachi-iro headers, Asagi selection, click-sort glyphs -->
   <Style TargetType="DataGrid">
     <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
@@ -394,9 +463,12 @@
     <Setter Property="SelectionUnit" Value="FullRow"/>
     <Setter Property="CanUserAddRows" Value="False"/>
     <Setter Property="CanUserDeleteRows" Value="False"/>
+    <Setter Property="CanUserSortColumns" Value="True"/>
     <Setter Property="AutoGenerateColumns" Value="False"/>
     <Setter Property="RowHeaderWidth" Value="0"/>
   </Style>
+
+  <SolidColorBrush x:Key="SidebarHeaderDividerBrush" Color="{StaticResource SidebarGradientDeepColor}"/>
 
   <Style TargetType="DataGridColumnHeader">
     <Setter Property="Background" Value="{StaticResource SidebarBackgroundBrush}"/>
@@ -404,10 +476,67 @@
     <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
     <Setter Property="FontSize" Value="11"/>
     <Setter Property="FontWeight" Value="SemiBold"/>
-    <Setter Property="Padding" Value="10,9"/>
-    <Setter Property="BorderBrush" Value="{StaticResource SidebarBackgroundBrush}"/>
+    <Setter Property="Padding" Value="10,8"/>
+    <Setter Property="BorderBrush" Value="{StaticResource SidebarHeaderDividerBrush}"/>
     <Setter Property="BorderThickness" Value="0,0,1,0"/>
     <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="ToolTip" Value="Click to sort"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="DataGridColumnHeader">
+          <Border x:Name="HeaderBorder"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  Padding="{TemplateBinding Padding}">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="{StaticResource SidebarBackgroundColor}" Offset="0"/>
+                <GradientStop Color="{StaticResource SidebarGradientMidColor}" Offset="1"/>
+              </LinearGradientBrush>
+            </Border.Background>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <ContentPresenter VerticalAlignment="Center"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                RecognizesAccessKey="True"/>
+              <TextBlock x:Name="SortGlyph"
+                         Grid.Column="1"
+                         Text="⇅"
+                         Margin="8,0,0,0"
+                         FontSize="11"
+                         FontFamily="{StaticResource BodyFont}"
+                         Foreground="{StaticResource SidebarMutedTextBrush}"
+                         VerticalAlignment="Center"
+                         Opacity="0.85"/>
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="SortDirection" Value="Ascending">
+              <Setter TargetName="SortGlyph" Property="Text" Value="▲"/>
+              <Setter TargetName="SortGlyph" Property="Foreground" Value="{StaticResource SidebarTextBrush}"/>
+              <Setter TargetName="SortGlyph" Property="Opacity" Value="1"/>
+            </Trigger>
+            <Trigger Property="SortDirection" Value="Descending">
+              <Setter TargetName="SortGlyph" Property="Text" Value="▼"/>
+              <Setter TargetName="SortGlyph" Property="Foreground" Value="{StaticResource SidebarTextBrush}"/>
+              <Setter TargetName="SortGlyph" Property="Opacity" Value="1"/>
+            </Trigger>
+            <Trigger Property="CanUserSort" Value="False">
+              <Setter TargetName="SortGlyph" Property="Visibility" Value="Collapsed"/>
+              <Setter Property="Cursor" Value="Arrow"/>
+              <Setter Property="ToolTip" Value="{x:Null}"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="HeaderBorder" Property="Opacity" Value="0.92"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
   </Style>
 
   <Style TargetType="DataGridCell">
