@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="CarInvoice.Desktop/Assets/logo-512.png" alt="CarInvoice logo" width="160" />
+</p>
+
 # CarInvoice
 
 Offline-first **.NET 8** Windows desktop app for second-hand / JDM car invoice generation. Built for Bahria Town / export-desk workflows: pull vehicle details from Outlook or auction sheets, normalize chassis plates, translate Japanese auction terms locally, and generate Word invoices without needing a live server.
@@ -67,3 +71,7 @@ Primary buttons use **Ai-iro** (`#2B4C7E`), not the Windows accent color.
 ## License
 
 See [LICENSE](LICENSE).
+
+## Developed By
+
+**[Rayder-23](https://github.com/Rayder-23)**
