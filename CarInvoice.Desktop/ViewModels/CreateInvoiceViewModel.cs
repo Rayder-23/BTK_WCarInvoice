@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CarInvoice.Core.DTOs;
 using CarInvoice.Core.Entities;
+using CarInvoice.Core.Enums;
 using CarInvoice.Core.Interfaces;
 using CarInvoice.Desktop.Services;
 using Microsoft.Win32;
@@ -57,6 +59,12 @@ public partial class CreateInvoiceViewModel : ViewModelBase
     [ObservableProperty] private string? _invoiceNotes;
     [ObservableProperty] private string? _lastGeneratedPath;
 
+    [ObservableProperty] private bool _isClassicOutlookReady;
+    [ObservableProperty] private bool _isOfflineOutlookMode = true;
+    [ObservableProperty] private string _outlookStatusLabel = "Offline email mode";
+    [ObservableProperty] private string _outlookStatusToolTip =
+        "New Outlook has no COM inbox sync. Drop a .eml/.msg file or use Paste Email Text.";
+
     public ObservableCollection<string> FuelTypes { get; } = new() { "Petrol", "Hybrid", "Diesel", "EV" };
     public ObservableCollection<string> Transmissions { get; } = new() { "Automatic", "CVT", "Manual" };
     public ObservableCollection<string> MileageUnits { get; } = new() { "km", "miles" };
@@ -81,6 +89,37 @@ public partial class CreateInvoiceViewModel : ViewModelBase
         _settings = settings;
         _outlookDraft = outlookDraft;
         Currency = settings.Currency;
+        RefreshOutlookStatus();
+    }
+
+    [RelayCommand]
+    private void RefreshOutlookStatus()
+    {
+        try
+        {
+            var status = _outlook.CheckOutlookAvailability();
+            IsClassicOutlookReady = status == OutlookAvailabilityStatus.ClassicOutlookReady;
+            IsOfflineOutlookMode = !IsClassicOutlookReady;
+            if (IsClassicOutlookReady)
+            {
+                OutlookStatusLabel = "Classic Outlook";
+                OutlookStatusToolTip = "Classic Outlook is running. Inbox sync and draft-with-attachment are available.";
+            }
+            else
+            {
+                OutlookStatusLabel = "Offline email mode";
+                OutlookStatusToolTip =
+                    "Classic Outlook is not running (or New Outlook is active). Open Classic Outlook to sync the inbox, " +
+                    "or drop a .eml/.msg / use Paste Email Text. CarInvoice never launches Outlook on its own.";
+            }
+        }
+        catch
+        {
+            IsClassicOutlookReady = false;
+            IsOfflineOutlookMode = true;
+            OutlookStatusLabel = "Offline email mode";
+            OutlookStatusToolTip = _outlook.GetUnavailableMessage();
+        }
     }
 
     partial void OnSalePriceChanged(decimal value) => RecalcTotal();
@@ -136,7 +175,14 @@ public partial class CreateInvoiceViewModel : ViewModelBase
         try
         {
             IsBusy = true;
-            StatusMessage = "Connecting to Outlook…";
+            RefreshOutlookStatus();
+            if (!IsClassicOutlookReady)
+            {
+                StatusMessage = _outlook.GetUnavailableMessage();
+                return;
+            }
+
+            StatusMessage = "Connecting to Classic Outlook…";
             var messages = await _outlook.FetchFromOutlookAsync(maxCount: 15, unreadOnly: false);
             OutlookMessages.Clear();
             foreach (var m in messages) OutlookMessages.Add(m);
@@ -146,11 +192,46 @@ public partial class CreateInvoiceViewModel : ViewModelBase
                 return;
             }
             ApplyExtracted(messages[0].Extracted, messages[0].BodyText);
+            if (!string.IsNullOrWhiteSpace(messages[0].SenderEmail) && string.IsNullOrWhiteSpace(CustomerEmail))
+                CustomerEmail = messages[0].SenderEmail;
             StatusMessage = $"Loaded {messages.Count} Outlook message(s). Showing first.";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Outlook error: {ex.Message}";
+            RefreshOutlookStatus();
+            StatusMessage = ex.Message.Contains("Classic Outlook", StringComparison.OrdinalIgnoreCase)
+                ? ex.Message
+                : $"Outlook unavailable: {ex.Message}. Use Drop .msg/.eml or Paste Email Text.";
+        }
+        finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private async Task PasteEmailTextAsync()
+    {
+        try
+        {
+            IsBusy = true;
+            if (!Clipboard.ContainsText())
+            {
+                StatusMessage = "Clipboard is empty — copy an email body (Ctrl+A / Ctrl+C) first.";
+                return;
+            }
+
+            var text = Clipboard.GetText();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                StatusMessage = "Clipboard text is empty.";
+                return;
+            }
+
+            var result = await _outlook.ParsePlainTextAsync(text);
+            ApplyExtracted(result.Extracted, result.BodyText);
+            StatusMessage = "Pasted email text parsed — chassis lookup & JP→EN applied.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Paste parse error: {ex.Message}";
         }
         finally { IsBusy = false; }
     }
@@ -170,6 +251,8 @@ public partial class CreateInvoiceViewModel : ViewModelBase
             IsBusy = true;
             var result = await _outlook.ParseMessageFileAsync(dlg.FileName);
             ApplyExtracted(result.Extracted, result.BodyText);
+            if (!string.IsNullOrWhiteSpace(result.SenderEmail) && string.IsNullOrWhiteSpace(CustomerEmail))
+                CustomerEmail = result.SenderEmail;
             StatusMessage = $"Parsed {System.IO.Path.GetFileName(dlg.FileName)}";
         }
         catch (Exception ex)
@@ -299,14 +382,27 @@ public partial class CreateInvoiceViewModel : ViewModelBase
             if (string.IsNullOrWhiteSpace(LastGeneratedPath) || !File.Exists(LastGeneratedPath))
                 await GenerateWordCoreAsync(false);
 
-            var ok = _outlookDraft.TryCreateDraft(
-                CustomerEmail,
-                $"Invoice {System.IO.Path.GetFileNameWithoutExtension(LastGeneratedPath)} — {Make} {Model}",
-                $"Dear {CustomerName},\n\nPlease find attached your vehicle sale invoice.\n\nRegards",
-                LastGeneratedPath,
-                out var error);
+            if (string.IsNullOrWhiteSpace(LastGeneratedPath) || !File.Exists(LastGeneratedPath))
+            {
+                StatusMessage = "Generate the Word invoice before emailing.";
+                return;
+            }
 
-            StatusMessage = ok ? "Outlook draft opened." : $"Outlook draft failed: {error}";
+            RefreshOutlookStatus();
+            var subject = $"Invoice {System.IO.Path.GetFileNameWithoutExtension(LastGeneratedPath)} — {Make} {Model}".Trim(' ', '—');
+            var summary =
+                $"Dear {CustomerName},\n\n" +
+                $"Please find your vehicle sale invoice for {Make} {Model}".Trim() +
+                (string.IsNullOrWhiteSpace(ChassisNumber) ? "" : $" (chassis {ChassisCode} {ChassisNumber})".Trim()) +
+                $".\nTotal: {TotalAmount:N2} {Currency}.\n\nRegards";
+
+            var outcome = _outlookDraft.CreateDraftOrFallback(
+                CustomerEmail,
+                subject,
+                summary,
+                LastGeneratedPath);
+
+            StatusMessage = outcome.Message;
         }
         catch (Exception ex)
         {
@@ -330,6 +426,8 @@ public partial class CreateInvoiceViewModel : ViewModelBase
             {
                 var result = await _outlook.ParseMessageFileAsync(filePath);
                 ApplyExtracted(result.Extracted, result.BodyText);
+                if (!string.IsNullOrWhiteSpace(result.SenderEmail) && string.IsNullOrWhiteSpace(CustomerEmail))
+                    CustomerEmail = result.SenderEmail;
                 StatusMessage = $"Dropped file parsed: {System.IO.Path.GetFileName(filePath)}";
             }
             else if (ext is ".xlsx")

@@ -7,6 +7,7 @@ public class EmailIngestionResult
 {
     public string Subject { get; set; } = string.Empty;
     public string Sender { get; set; } = string.Empty;
+    public string SenderEmail { get; set; } = string.Empty;
     public string BodyText { get; set; } = string.Empty;
     public string BodyHtml { get; set; } = string.Empty;
     public DateTime? ReceivedAt { get; set; }

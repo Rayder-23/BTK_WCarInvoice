@@ -1,5 +1,6 @@
 using CarInvoice.Core.DTOs;
 using CarInvoice.Core.Entities;
+using CarInvoice.Core.Enums;
 
 namespace CarInvoice.Core.Interfaces;
 
@@ -18,12 +19,27 @@ public interface IJapaneseTranslationService
     Task AddOrUpdateTermAsync(string japanese, string english, string category, CancellationToken ct = default);
 }
 
-/// <summary>Ingests vehicle data from live Outlook COM or offline .msg/.eml files.</summary>
+/// <summary>Ingests vehicle data from live Outlook COM or offline .msg/.eml / clipboard text.</summary>
 public interface IOutlookIngestionService
 {
+    /// <summary>True when Classic Outlook COM is ready (same as <see cref="CheckOutlookAvailability"/> == ClassicOutlookReady).</summary>
     bool IsOutlookAvailable();
+
+    /// <summary>
+    /// Probes Classic Outlook via ProgID / COM without throwing unhandled COM exceptions.
+    /// New Outlook (WebView2) and missing Outlook map to <see cref="OutlookAvailabilityStatus.NewOutlookOrUnavailable"/>.
+    /// </summary>
+    OutlookAvailabilityStatus CheckOutlookAvailability();
+
+    /// <summary>Friendly message when inbox sync is unavailable.</summary>
+    string GetUnavailableMessage();
+
     Task<List<EmailIngestionResult>> FetchFromOutlookAsync(string? folderName = null, int maxCount = 20, bool unreadOnly = true, CancellationToken ct = default);
     Task<EmailIngestionResult> ParseMessageFileAsync(string filePath, CancellationToken ct = default);
+
+    /// <summary>Parse pasted email / auction text (New Outlook Ctrl+A / Ctrl+C fallback).</summary>
+    Task<EmailIngestionResult> ParsePlainTextAsync(string text, CancellationToken ct = default);
+
     ExtractedVehicleFields ExtractFields(string text);
 }
 
