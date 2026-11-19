@@ -17,7 +17,7 @@ public sealed class AppSettingsService : IAppSettingsService
         TemplatePath = System.IO.Path.Combine(AppContext.BaseDirectory, "Templates", "DefaultInvoiceTemplate.docx");
         OutputFolder = System.IO.Path.Combine(appDir, "Invoices");
         BackupFolder = DatabaseInitializer.GetDefaultBackupFolder();
-        Currency = "PKR";
+        Currency = "USD";
     }
 
     public string DatabasePath { get; private set; }
@@ -32,8 +32,16 @@ public sealed class AppSettingsService : IAppSettingsService
         TemplatePath = Get(settings, nameof(TemplatePath), TemplatePath);
         OutputFolder = Get(settings, nameof(OutputFolder), OutputFolder);
         BackupFolder = Get(settings, nameof(BackupFolder), BackupFolder);
-        Currency = Get(settings, nameof(Currency), Currency);
+        Currency = NormalizeCurrency(Get(settings, nameof(Currency), Currency));
         DatabasePath = Get(settings, nameof(DatabasePath), DatabasePath);
+    }
+
+    /// <summary>Trim / uppercase ISO-ish code. Empty falls back to USD. No FX conversion.</summary>
+    public static string NormalizeCurrency(string? currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+            return "USD";
+        return currency.Trim().ToUpperInvariant();
     }
 
     public async Task SaveAsync(CancellationToken ct = default)
@@ -41,6 +49,7 @@ public sealed class AppSettingsService : IAppSettingsService
         await UpsertAsync(nameof(TemplatePath), TemplatePath, ct);
         await UpsertAsync(nameof(OutputFolder), OutputFolder, ct);
         await UpsertAsync(nameof(BackupFolder), BackupFolder, ct);
+        Currency = NormalizeCurrency(Currency);
         await UpsertAsync(nameof(Currency), Currency, ct);
         await UpsertAsync(nameof(DatabasePath), DatabasePath, ct);
         await _db.SaveChangesAsync(ct);

@@ -33,15 +33,17 @@
                 IsReadOnly="True" MouseDoubleClick="OnRowDoubleClick"
                 CanUserSortColumns="True">
         <DataGrid.Columns>
+          <DataGridTextColumn Header="STOCK" Binding="{Binding StockNumber}" SortMemberPath="StockNumber" Width="80"/>
           <DataGridTextColumn Header="CODE" Binding="{Binding ChassisCode}" SortMemberPath="ChassisCode" Width="100"/>
-          <DataGridTextColumn Header="NUMBER" Binding="{Binding ChassisNumber}" SortMemberPath="ChassisNumber" Width="120"/>
-          <DataGridTextColumn Header="MAKE" Binding="{Binding Make}" SortMemberPath="Make" Width="100"/>
-          <DataGridTextColumn Header="MODEL" Binding="{Binding Model}" SortMemberPath="Model" Width="140"/>
+          <DataGridTextColumn Header="NUMBER" Binding="{Binding ChassisNumber}" SortMemberPath="ChassisNumber" Width="110"/>
+          <DataGridTextColumn Header="MAKE" Binding="{Binding Make}" SortMemberPath="Make" Width="90"/>
+          <DataGridTextColumn Header="MODEL" Binding="{Binding Model}" SortMemberPath="Model" Width="120"/>
           <DataGridTextColumn Header="YEAR" Binding="{Binding ManufacturingYear}" SortMemberPath="ManufacturingYear" Width="70"/>
-          <DataGridTextColumn Header="MILEAGE" Binding="{Binding Mileage}" SortMemberPath="Mileage" Width="90"/>
-          <DataGridTextColumn Header="COLOR" Binding="{Binding ExteriorColor}" SortMemberPath="ExteriorColor" Width="100"/>
-          <DataGridTextColumn Header="GRADE" Binding="{Binding AuctionGrade}" SortMemberPath="AuctionGrade" Width="70"/>
-          <DataGridTextColumn Header="UPDATED" Binding="{Binding UpdatedAt, StringFormat=\{0:yyyy-MM-dd\}}" SortMemberPath="UpdatedAt" Width="110"/>
+          <DataGridTextColumn Header="MILEAGE" Binding="{Binding Mileage}" SortMemberPath="Mileage" Width="80"/>
+          <DataGridTextColumn Header="COLOR" Binding="{Binding ExteriorColor}" SortMemberPath="ExteriorColor" Width="90"/>
+          <DataGridTextColumn Header="BODY" Binding="{Binding BodyType}" SortMemberPath="BodyType" Width="90"/>
+          <DataGridTextColumn Header="COND" Binding="{Binding Condition}" SortMemberPath="Condition" Width="70"/>
+          <DataGridTextColumn Header="UPDATED" Binding="{Binding UpdatedAt, StringFormat=\{0:yyyy-MM-dd\}}" SortMemberPath="UpdatedAt" Width="100"/>
         </DataGrid.Columns>
       </DataGrid>
 

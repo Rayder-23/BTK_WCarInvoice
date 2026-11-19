@@ -137,14 +137,62 @@
     <Setter Property="SnapsToDevicePixels" Value="True"/>
   </Style>
 
-  <!-- File / folder paths: Consolas, not Yu Gothic (keeps C:\… readable) -->
+  <!-- File / folder paths: Consolas, never Yu Gothic (Yu Gothic draws \ as ¥) -->
+  <FontFamily x:Key="PathFont">Consolas, Cascadia Mono, Courier New</FontFamily>
+
   <Style x:Key="PathTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-    <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, Courier New"/>
+    <Setter Property="FontFamily" Value="{StaticResource PathFont}"/>
     <Setter Property="FontSize" Value="12.5"/>
     <Setter Property="FontWeight" Value="Normal"/>
     <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     <Setter Property="CaretBrush" Value="{StaticResource TextPrimaryBrush}"/>
     <Setter Property="Padding" Value="8,7"/>
+    <Setter Property="Language" Value="en-US"/>
+    <Setter Property="TextWrapping" Value="NoWrap"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+  </Style>
+
+  <Style x:Key="PathTextStyle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource PathFont}"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    <Setter Property="TextWrapping" Value="Wrap"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+  </Style>
+
+  <!-- Compact icon-only action on status banners -->
+  <Style x:Key="StatusIconButtonStyle" TargetType="Button">
+    <Setter Property="Width" Value="32"/>
+    <Setter Property="Height" Value="32"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Margin" Value="6,0,0,0"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Bd"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="6"
+                  Width="{TemplateBinding Width}"
+                  Height="{TemplateBinding Height}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectionTintBrush}"/>
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource ChassisHighlightBrush}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
   </Style>
 
   <!-- Small certificate label above titles -->
@@ -231,10 +279,46 @@
 
   <Style x:Key="StatusMessageStyle" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
-    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
     <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
     <Setter Property="TextWrapping" Value="Wrap"/>
-    <Setter Property="Margin" Value="0,10,0,0"/>
+    <Setter Property="Margin" Value="0"/>
+  </Style>
+
+  <!-- Semantic footer banner — bind Border.Tag or use DataTriggers on StatusSeverity -->
+  <Style x:Key="StatusBannerStyle" TargetType="Border">
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="12,9"/>
+    <Setter Property="Margin" Value="0,0,0,10"/>
+    <Setter Property="Background" Value="{StaticResource SelectionTintBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+  </Style>
+
+  <Style x:Key="StatusBannerSuccessStyle" TargetType="Border" BasedOn="{StaticResource StatusBannerStyle}">
+    <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource SuccessTextBrush}"/>
+  </Style>
+
+  <Style x:Key="StatusBannerWarningStyle" TargetType="Border" BasedOn="{StaticResource StatusBannerStyle}">
+    <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+  </Style>
+
+  <Style x:Key="StatusBannerErrorStyle" TargetType="Border" BasedOn="{StaticResource StatusBannerStyle}">
+    <Setter Property="Background" Value="{StaticResource DangerBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource DangerTextBrush}"/>
+  </Style>
+
+  <!-- Strong required-field highlight (Yamabuki wash + border) -->
+  <Style x:Key="RequiredFieldHighlightStyle" TargetType="Border">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="1.5"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="2"/>
+    <Setter Property="Margin" Value="0,0,0,0"/>
   </Style>
 
   <Style x:Key="BannerTextStyle" TargetType="TextBlock">
@@ -261,6 +345,66 @@
     <Setter Property="CornerRadius" Value="0,8,8,0"/>
     <Setter Property="Padding" Value="16"/>
     <Setter Property="Margin" Value="0,0,0,12"/>
+  </Style>
+
+  <!-- Multi-model chassis picker (Asagi fill + Ruri border) -->
+  <Style x:Key="MultiModelPickerStyle" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource SelectionTintBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource ChassisHighlightBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="12"/>
+    <Setter Property="Margin" Value="0,0,0,12"/>
+  </Style>
+
+  <Style x:Key="MultiModelOptionButtonStyle" TargetType="Button">
+    <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}"/>
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Padding" Value="12,8"/>
+    <Setter Property="Margin" Value="0,0,8,8"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Bd"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="6"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource ChassisHighlightBrush}"/>
+              <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectionTintBrush}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- Field highlight when Color/Year/Odometer/Price missing before generate -->
+  <Style x:Key="WarningFieldTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+    <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+    <Setter Property="BorderThickness" Value="1.5"/>
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+  </Style>
+
+  <Style x:Key="VerificationValueCardStyle" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource SelectionTintBrush}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="16,14"/>
+    <Setter Property="Margin" Value="0,0,10,10"/>
   </Style>
 
   <!-- Card surface (generic panels) -->
@@ -346,12 +490,15 @@
     <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}"/>
   </Style>
 
-  <!-- ComboBox -->
+  <!-- ComboBox — MaxDropDownHeight so long lists get a popup ScrollViewer (wheel works via ComboBoxWheelFix) -->
   <Style TargetType="ComboBox">
     <Setter Property="Background" Value="{StaticResource CardSurfaceBrush}"/>
     <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
     <Setter Property="Padding" Value="6,4"/>
+    <Setter Property="MaxDropDownHeight" Value="280"/>
+    <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
   </Style>
 
   <!-- Primary / Secondary buttons (standard WPF Button) -->

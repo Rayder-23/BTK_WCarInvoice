@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:ctrl="clr-namespace:CarInvoice.Desktop.Controls"
+             xmlns:beh="clr-namespace:CarInvoice.Desktop.Behaviors"
              Background="{StaticResource AppBackgroundBrush}"
              Foreground="{StaticResource TextPrimaryBrush}"
              FontFamily="{StaticResource BodyFont}">
@@ -23,52 +24,157 @@
           </Grid.RowDefinitions>
 
           <TextBlock Text="Word Template" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
-          <TextBox Grid.Column="1" Text="{Binding TemplatePath, UpdateSourceTrigger=PropertyChanged}"
-                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"/>
+          <TextBox Grid.Column="1" Text="{Binding TemplatePath, UpdateSourceTrigger=LostFocus}"
+                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"
+                   ToolTip="{Binding TemplatePath}"/>
           <ui:Button Grid.Column="2" Content="Browse" Command="{Binding BrowseTemplateCommand}"
-                     Appearance="Secondary" Margin="8,0,0,0"/>
+                     Appearance="Secondary" Margin="8,0,0,0" VerticalAlignment="Center"/>
 
           <TextBlock Grid.Row="1" Text="Output Folder" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
-          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}"
-                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"/>
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding OutputFolder, UpdateSourceTrigger=LostFocus}"
+                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"
+                   ToolTip="{Binding OutputFolder}"/>
           <ui:Button Grid.Row="1" Grid.Column="2" Content="Browse" Command="{Binding BrowseOutputCommand}"
-                     Appearance="Secondary" Margin="8,0,0,0"/>
+                     Appearance="Secondary" Margin="8,0,0,0" VerticalAlignment="Center"/>
 
           <TextBlock Grid.Row="2" Text="Backup Folder" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
-          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BackupFolder, UpdateSourceTrigger=PropertyChanged}"
-                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"/>
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BackupFolder, UpdateSourceTrigger=LostFocus}"
+                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"
+                   ToolTip="{Binding BackupFolder}"/>
+          <ui:Button Grid.Row="2" Grid.Column="2" Content="Browse" Command="{Binding BrowseBackupCommand}"
+                     Appearance="Secondary" Margin="8,0,0,0" VerticalAlignment="Center"/>
 
           <TextBlock Grid.Row="3" Text="Database" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
           <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding DatabasePath}" IsReadOnly="True"
-                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"/>
+                   Style="{StaticResource PathTextBoxStyle}" Margin="8,4"
+                   ToolTip="{Binding DatabasePath}"/>
           <ui:Button Grid.Row="3" Grid.Column="2" Content="Backup Now" Command="{Binding BackupNowCommand}"
-                     Appearance="Secondary" Margin="8,0,0,0"/>
+                     Appearance="Secondary" Margin="8,0,0,0" VerticalAlignment="Center"/>
 
-          <TextBlock Grid.Row="4" Text="Currency" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
-          <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Currency, UpdateSourceTrigger=PropertyChanged}" Margin="8,4" Width="120" HorizontalAlignment="Left"/>
+          <TextBlock Grid.Row="4" Text="Default Currency" VerticalAlignment="Center" Style="{StaticResource FieldLabelStyle}" Margin="0"
+                     ToolTip="Used when starting a new invoice. Each invoice can pick a different currency."/>
+          <ComboBox Grid.Row="4" Grid.Column="1"
+                    ItemsSource="{Binding Currencies}"
+                    Text="{Binding Currency, UpdateSourceTrigger=PropertyChanged}"
+                    IsEditable="True"
+                    Width="120" HorizontalAlignment="Left" Margin="8,4"
+                    ToolTip="Default only — Create Invoice lets you change currency per invoice. No FX conversion."/>
         </Grid>
       </Border>
       <ui:Button Content="Save Settings" Command="{Binding SaveSettingsCommand}" Appearance="Primary"
                  HorizontalAlignment="Left" Margin="0,0,0,28"/>
 
+      <ctrl:SectionHeader Eyebrow="BANK" Title="Bank Profiles"/>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+        <ui:Button Content="Export to Excel (.xlsx)" Command="{Binding ExportBankExcelCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+        <ui:Button Content="Import from Excel (.xlsx)" Command="{Binding ImportBankExcelCommand}" Appearance="Secondary"/>
+      </StackPanel>
+      <Border Style="{StaticResource CardSurfaceStyle}" Margin="0,0,0,28" Padding="14">
+        <StackPanel>
+          <DockPanel Margin="0,0,0,12">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <ui:Button Content="New" Command="{Binding NewBankProfileCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+              <ui:Button Content="Save Bank Profile" Command="{Binding SaveBankProfileCommand}" Appearance="Primary" Margin="0,0,8,0"/>
+              <ui:Button Content="Delete" Command="{Binding DeleteBankProfileCommand}" Appearance="Danger"
+                         CommandParameter="{Binding SelectedBankProfile}"/>
+            </StackPanel>
+            <ComboBox ItemsSource="{Binding BankProfiles}"
+                      SelectedItem="{Binding SelectedBankProfile}"
+                      DisplayMemberPath="ProfileName"
+                      MinWidth="280"/>
+          </DockPanel>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Margin="0,0,8,10">
+              <TextBlock Text="Profile Name" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding BankProfileName, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="8,0,0,10" VerticalAlignment="Bottom">
+              <CheckBox Content="Default profile" IsChecked="{Binding BankIsDefault}"
+                        FontFamily="{StaticResource BodyFont}" Foreground="{StaticResource TextPrimaryBrush}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Margin="0,0,8,10">
+              <TextBlock Text="Bank Name" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding BankName, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,10">
+              <TextBlock Text="Account Holder" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding AccountHolderName, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Margin="0,0,8,10">
+              <TextBlock Text="Account No" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding AccountNumber, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Grid.Column="1" Margin="8,0,0,10">
+              <TextBlock Text="SWIFT" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding SwiftCode, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="3" Margin="0,0,8,10">
+              <TextBlock Text="Branch" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding BranchName, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="3" Grid.Column="1" Margin="8,0,0,10">
+              <TextBlock Text="Branch Code" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding BranchCode, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Margin="0,0,0,10">
+              <TextBlock Text="Branch Address" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding BranchAddress, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="5" Margin="0,0,8,10">
+              <TextBlock Text="Intermediary Bank" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding IntermediaryBankName, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="5" Grid.Column="1" Margin="8,0,0,10">
+              <TextBlock Text="Intermediary Country" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding IntermediaryCountry, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="6" Margin="0,0,8,0">
+              <TextBlock Text="Intermediary Branch" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding IntermediaryBranch, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="6" Grid.Column="1" Margin="8,0,0,0">
+              <TextBlock Text="Intermediary SWIFT" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding IntermediarySwiftCode, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
       <ctrl:SectionHeader Eyebrow="CHASSIS" Title="Chassis Code Dictionary"/>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+        <ui:Button Content="Export to Excel (.xlsx)" Command="{Binding ExportChassisExcelCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+        <ui:Button Content="Import from Excel (.xlsx)" Command="{Binding ImportChassisExcelCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+        <ui:Button Content="Download Sample Import Template (.xlsx)" Command="{Binding DownloadChassisSampleCommand}" Appearance="Secondary"/>
+      </StackPanel>
       <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
         <TextBox Width="100" Margin="0,0,6,0" Text="{Binding NewChassisCode, UpdateSourceTrigger=PropertyChanged}"
                  Style="{StaticResource ChassisTextBoxStyle}" FontSize="13" ToolTip="Code"/>
         <TextBox Width="100" Margin="0,0,6,0" Text="{Binding NewMake, UpdateSourceTrigger=PropertyChanged}" ToolTip="Make"/>
         <TextBox Width="140" Margin="0,0,6,0" Text="{Binding NewModel, UpdateSourceTrigger=PropertyChanged}" ToolTip="Model"/>
-        <TextBox Width="80" Margin="0,0,6,0" Text="{Binding NewEngineCc, UpdateSourceTrigger=PropertyChanged}" ToolTip="Cc"/>
+        <TextBox Width="80" Margin="0,0,6,0" Text="{Binding NewEngineCc, UpdateSourceTrigger=PropertyChanged}"
+                 beh:NumericInput.Kind="Integer" ToolTip="Cc"/>
         <TextBox Width="90" Margin="0,0,6,0" Text="{Binding NewFuel, UpdateSourceTrigger=PropertyChanged}" ToolTip="Fuel"/>
         <ui:Button Content="Add" Command="{Binding AddChassisCommand}" Appearance="Primary"/>
       </StackPanel>
       <DataGrid ItemsSource="{Binding ChassisLookups}" IsReadOnly="True"
-                Height="200" Margin="0,0,0,28" CanUserSortColumns="True">
+                Height="220" Margin="0,0,0,28" CanUserSortColumns="True">
         <DataGrid.Columns>
-          <DataGridTextColumn Header="CODE" Binding="{Binding ChassisCode}" SortMemberPath="ChassisCode" Width="100"/>
-          <DataGridTextColumn Header="MAKE" Binding="{Binding DefaultMake}" SortMemberPath="DefaultMake" Width="120"/>
-          <DataGridTextColumn Header="MODEL" Binding="{Binding DefaultModel}" SortMemberPath="DefaultModel" Width="180"/>
-          <DataGridTextColumn Header="CC" Binding="{Binding DefaultEngineCc}" SortMemberPath="DefaultEngineCc" Width="70"/>
-          <DataGridTextColumn Header="FUEL" Binding="{Binding DefaultFuelType}" SortMemberPath="DefaultFuelType" Width="100"/>
+          <DataGridTextColumn Header="CODE" Binding="{Binding ChassisCode}" SortMemberPath="ChassisCode" Width="90"/>
+          <DataGridTextColumn Header="MAKE" Binding="{Binding DefaultMake}" SortMemberPath="DefaultMake" Width="90"/>
+          <DataGridTextColumn Header="MODEL" Binding="{Binding DefaultModel}" SortMemberPath="DefaultModel" Width="120"/>
+          <DataGridTextColumn Header="SERIAL RANGE" Binding="{Binding SerialPrefixOrRange}" SortMemberPath="SerialPrefixOrRange" Width="110"/>
+          <DataGridTextColumn Header="CC" Binding="{Binding DefaultEngineCc}" SortMemberPath="DefaultEngineCc" Width="60"/>
+          <DataGridTextColumn Header="BODY" Binding="{Binding DefaultBodyType}" SortMemberPath="DefaultBodyType" Width="90"/>
+          <DataGridTextColumn Header="FUEL" Binding="{Binding DefaultFuelType}" SortMemberPath="DefaultFuelType" Width="80"/>
+          <DataGridTextColumn Header="NOTES" Binding="{Binding Notes}" SortMemberPath="Notes" Width="*"/>
           <DataGridTemplateColumn Header="" Width="90" CanUserSort="False">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
@@ -87,6 +193,10 @@
                    Style="{StaticResource BannerTextStyle}"
                    Foreground="{StaticResource WarningTextBrush}"/>
       </Border>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+        <ui:Button Content="Export to Excel (.xlsx)" Command="{Binding ExportGlossaryExcelCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+        <ui:Button Content="Import from Excel (.xlsx)" Command="{Binding ImportGlossaryExcelCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+      </StackPanel>
       <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
         <TextBox Width="140" Margin="0,0,6,0" Text="{Binding NewJapanese, UpdateSourceTrigger=PropertyChanged}" ToolTip="Japanese term"/>
         <TextBox Width="200" Margin="0,0,6,0" Text="{Binding NewEnglish, UpdateSourceTrigger=PropertyChanged}" ToolTip="English"/>

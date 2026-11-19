@@ -40,6 +40,7 @@ public partial class MainWindowViewModel : ObservableObject
             _ => _createInvoice
         };
 
+        if (CurrentPage is CreateInvoiceViewModel c) _ = c.RefreshFromDataStoresAsync();
         if (CurrentPage is VehiclesViewModel v) _ = v.LoadAsync();
         if (CurrentPage is InvoicesViewModel i) _ = i.LoadAsync();
         if (CurrentPage is SettingsViewModel s) _ = s.LoadAsync();

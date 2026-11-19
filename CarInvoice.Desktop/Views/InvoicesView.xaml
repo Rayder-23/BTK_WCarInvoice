@@ -29,15 +29,24 @@
               IsReadOnly="True" MouseDoubleClick="OnRowDoubleClick"
               CanUserSortColumns="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNumber}" SortMemberPath="InvoiceNumber" Width="130"/>
-        <DataGridTextColumn Header="DATE" Binding="{Binding InvoiceDate, StringFormat=\{0:yyyy-MM-dd\}}" SortMemberPath="InvoiceDate" Width="110"/>
-        <DataGridTextColumn Header="CUSTOMER" Binding="{Binding Customer.FullName}" SortMemberPath="Customer.FullName" Width="160"/>
-        <DataGridTextColumn Header="VEHICLE" Binding="{Binding Vehicle.Model}" SortMemberPath="Vehicle.Model" Width="140"/>
-        <DataGridTextColumn Header="CHASSIS" Binding="{Binding Vehicle.ChassisNumber}" SortMemberPath="Vehicle.ChassisNumber" Width="110"/>
-        <DataGridTextColumn Header="TOTAL" Binding="{Binding TotalAmount, StringFormat=\{0:N2\}}" SortMemberPath="TotalAmount" Width="100"/>
-        <DataGridTextColumn Header="CCY" Binding="{Binding Currency}" SortMemberPath="Currency" Width="70"/>
-        <DataGridCheckBoxColumn Header="DRAFT" Binding="{Binding IsDraft}" SortMemberPath="IsDraft" Width="70"/>
-        <DataGridTextColumn Header="DOCUMENT" Binding="{Binding GeneratedDocPath}" SortMemberPath="GeneratedDocPath" Width="*"/>
+        <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNumber}" SortMemberPath="InvoiceNumber" Width="110"/>
+        <DataGridTextColumn Header="DATE" Binding="{Binding InvoiceDate, StringFormat=\{0:dd-MMM-yy\}}" SortMemberPath="InvoiceDate" Width="100"/>
+        <DataGridTextColumn Header="PORT" Binding="{Binding DestinationPort}" SortMemberPath="DestinationPort" Width="100"/>
+        <DataGridTextColumn Header="COUNTRY" Binding="{Binding DestinationCountry}" SortMemberPath="DestinationCountry" Width="100"/>
+        <DataGridTextColumn Header="CUSTOMER" Binding="{Binding Customer.FullName}" SortMemberPath="Customer.FullName" Width="150"/>
+        <DataGridTextColumn Header="CHASSIS" Binding="{Binding Vehicle.ChassisNumber}" SortMemberPath="Vehicle.ChassisNumber" Width="100"/>
+        <DataGridTextColumn Header="TERM" Binding="{Binding TradeTerm}" SortMemberPath="TradeTerm" Width="70"/>
+        <DataGridTextColumn Header="TOTAL" Binding="{Binding TotalAmount, StringFormat=\{0:N0\}}" SortMemberPath="TotalAmount" Width="90"/>
+        <DataGridTextColumn Header="CCY" Binding="{Binding Currency}" SortMemberPath="Currency" Width="60"/>
+        <DataGridCheckBoxColumn Header="DRAFT" Binding="{Binding IsDraft}" SortMemberPath="IsDraft" Width="60"/>
+        <DataGridTextColumn Header="DOCUMENT" Binding="{Binding GeneratedDocPath}" SortMemberPath="GeneratedDocPath" Width="*">
+          <DataGridTextColumn.ElementStyle>
+            <Style TargetType="TextBlock" BasedOn="{StaticResource PathTextStyle}">
+              <Setter Property="VerticalAlignment" Value="Center"/>
+              <Setter Property="Margin" Value="4,0"/>
+            </Style>
+          </DataGridTextColumn.ElementStyle>
+        </DataGridTextColumn>
       </DataGrid.Columns>
     </DataGrid>
   </DockPanel>

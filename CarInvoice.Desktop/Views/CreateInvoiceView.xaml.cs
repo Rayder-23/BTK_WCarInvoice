@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using CarInvoice.Desktop.Behaviors;
 using CarInvoice.Desktop.ViewModels;
 
 namespace CarInvoice.Desktop.Views;
@@ -53,18 +54,26 @@ public partial class CreateInvoiceView : UserControl
     }
 
     /// <summary>
-    /// Ensures mouse-wheel scrolling works over the whole page, not only inside multiline TextBoxes.
-    /// Nested TextBoxes keep the wheel only while they still have content to scroll.
+    /// Page wheel: scroll the form ScrollViewer, but never steal the wheel from an open
+    /// ComboBox dropdown (popup) or from a multiline TextBox that still has overflow.
     /// </summary>
     private void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (e.Handled) return;
+
+        // Open dropdown popup owns the wheel — do not mark Handled / scroll the page.
+        if (ComboBoxWheelFix.IsAnyDropDownOpen(this))
+            return;
+
         ScrollPage(e);
     }
 
     private void OnChildPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (sender is not TextBox box) return;
+
+        if (ComboBoxWheelFix.IsAnyDropDownOpen(this))
+            return;
 
         var viewer = GetScrollViewer(box);
         if (viewer is null)

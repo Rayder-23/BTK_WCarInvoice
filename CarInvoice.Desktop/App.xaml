@@ -12,6 +12,7 @@
         <ResourceDictionary Source="Themes/JapaneseTheme.xaml"/>
       </ResourceDictionary.MergedDictionaries>
       <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+      <conv:InverseBoolConverter x:Key="InverseBool"/>
       <conv:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVis"/>
     </ResourceDictionary>
   </Application.Resources>

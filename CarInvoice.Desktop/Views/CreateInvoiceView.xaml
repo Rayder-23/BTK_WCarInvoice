@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:ctrl="clr-namespace:CarInvoice.Desktop.Controls"
+             xmlns:beh="clr-namespace:CarInvoice.Desktop.Behaviors"
              Background="{StaticResource AppBackgroundBrush}"
              Foreground="{StaticResource TextPrimaryBrush}"
              FontFamily="{StaticResource BodyFont}"
@@ -14,14 +15,13 @@
     <ctrl:PageHeader DockPanel.Dock="Top"
                      Eyebrow="CREATE"
                      Title="Create Invoice"
-                     Subtitle="Pull from Outlook or auction sheets, normalize the chassis plate, then generate the Word invoice."/>
+                     Subtitle="MDK-style export invoice — chassis plate, destination, consignee, then Word .docx."/>
 
     <!-- Source bar -->
     <Border DockPanel.Dock="Top" Style="{StaticResource CardSurfaceStyle}" Padding="12,10" Margin="0,0,0,12">
       <DockPanel LastChildFill="True">
         <TextBlock DockPanel.Dock="Left" Text="SOURCE" Style="{StaticResource ToolbarCaptionStyle}" Margin="0,0,10,0"/>
 
-        <!-- Outlook availability badge -->
         <Border DockPanel.Dock="Right"
                 Style="{StaticResource SuccessBadgeStyle}"
                 Padding="10,5"
@@ -57,12 +57,10 @@
                      ToolTip="Requires Classic Outlook already running (never auto-started)"/>
           <ui:Button Content="Paste Email Text" Icon="{ui:SymbolIcon ClipboardPaste24}"
                      Appearance="Secondary"
-                     Command="{Binding PasteEmailTextCommand}" Margin="0,0,8,0"
-                     ToolTip="Paste copied email body from New Outlook (Ctrl+A / Ctrl+C), then extract chassis"/>
+                     Command="{Binding PasteEmailTextCommand}" Margin="0,0,8,0"/>
           <ui:Button Content="Drop .msg/.eml" Icon="{ui:SymbolIcon DocumentArrowDown24}"
                      Appearance="Secondary"
-                     Command="{Binding DropMessageFileCommand}" Margin="0,0,8,0"
-                     ToolTip="Pick a .msg (Classic) or .eml (New Outlook Save As) — or drag onto this page"/>
+                     Command="{Binding DropMessageFileCommand}" Margin="0,0,8,0"/>
           <ui:Button Content="Import from Excel" Icon="{ui:SymbolIcon DocumentTable24}"
                      Appearance="Secondary"
                      Command="{Binding ImportExcelRowCommand}" Margin="0,0,8,0"/>
@@ -73,7 +71,7 @@
     </Border>
 
     <!-- Bottom actions -->
-    <Border DockPanel.Dock="Bottom" Style="{StaticResource CardSurfaceStyle}" Padding="12,10" Margin="0,12,0,0">
+    <Border DockPanel.Dock="Bottom" Style="{StaticResource CardSurfaceStyle}" Padding="12,10" Margin="0,8,0,0">
       <StackPanel Orientation="Horizontal">
         <ui:Button Content="Save Draft" Command="{Binding SaveDraftCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
         <ui:Button Content="Generate Word (.docx)" Command="{Binding GenerateWordDocCommand}"
@@ -81,13 +79,80 @@
         <ui:Button Content="Generate &amp; Open Word" Command="{Binding GenerateAndOpenCommand}"
                    Appearance="Secondary" Margin="0,0,8,0"/>
         <ui:Button Content="Email Invoice" Command="{Binding CreateOutlookDraftCommand}"
-                   Appearance="Secondary"
-                   ToolTip="Classic Outlook: draft with .docx attached. Otherwise opens mailto: and selects the file in Explorer."/>
+                   Appearance="Secondary"/>
       </StackPanel>
     </Border>
 
-    <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusMessage}"
-               Style="{StaticResource StatusMessageStyle}"/>
+    <!-- Semantic status banner (above action bar) -->
+    <Border DockPanel.Dock="Bottom"
+            Visibility="{Binding HasStatusMessage, Converter={StaticResource BoolToVis}}"
+            Margin="0,8,0,0">
+      <Border.Style>
+        <Style TargetType="Border" BasedOn="{StaticResource StatusBannerStyle}">
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding StatusSeverity}" Value="Success">
+              <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
+              <Setter Property="BorderBrush" Value="{StaticResource SuccessTextBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding StatusSeverity}" Value="Warning">
+              <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+              <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding StatusSeverity}" Value="Error">
+              <Setter Property="Background" Value="{StaticResource DangerBackgroundBrush}"/>
+              <Setter Property="BorderBrush" Value="{StaticResource DangerTextBrush}"/>
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </Border.Style>
+      <DockPanel LastChildFill="True">
+        <!-- Compact open actions (success only), right-aligned -->
+        <StackPanel DockPanel.Dock="Right"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Margin="12,0,0,0"
+                    Visibility="{Binding ShowGenerationActions, Converter={StaticResource BoolToVis}}">
+          <Button Style="{StaticResource StatusIconButtonStyle}"
+                  ToolTip="Open folder"
+                  Command="{Binding OpenGeneratedFolderCommand}">
+            <ui:SymbolIcon Symbol="FolderOpen24" FontSize="16"
+                           Foreground="{StaticResource SuccessTextBrush}"/>
+          </Button>
+          <Button Style="{StaticResource StatusIconButtonStyle}"
+                  ToolTip="Open invoice"
+                  Command="{Binding OpenGeneratedInvoiceCommand}">
+            <ui:SymbolIcon Symbol="Document24" FontSize="16"
+                           Foreground="{StaticResource SuccessTextBrush}"/>
+          </Button>
+        </StackPanel>
+
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock" BasedOn="{StaticResource StatusMessageStyle}">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding StatusSeverity}" Value="Success">
+                    <Setter Property="Foreground" Value="{StaticResource SuccessTextBrush}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding StatusSeverity}" Value="Warning">
+                    <Setter Property="Foreground" Value="{StaticResource WarningTextBrush}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding StatusSeverity}" Value="Error">
+                    <Setter Property="Foreground" Value="{StaticResource DangerTextBrush}"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+          <!-- Path in Consolas so \ stays a slash (Yu Gothic renders it as ¥) -->
+          <TextBlock Text="{Binding LastGeneratedPathDisplay}"
+                     Style="{StaticResource PathTextStyle}"
+                     Foreground="{StaticResource SuccessTextBrush}"
+                     Margin="0,4,0,0"
+                     Visibility="{Binding ShowGenerationActions, Converter={StaticResource BoolToVis}}"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
 
     <ScrollViewer x:Name="PageScrollViewer"
                   VerticalScrollBarVisibility="Auto"
@@ -95,54 +160,7 @@
                   CanContentScroll="False"
                   PanningMode="VerticalOnly">
       <StackPanel>
-        <!-- Chassis plate card -->
-        <Border Style="{StaticResource ChassisPlateCardStyle}">
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="*"/>
-              <ColumnDefinition Width="*"/>
-              <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto"/>
-              <RowDefinition Height="Auto"/>
-              <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,10">
-              <TextBlock Text="CHASSIS PLATE" Style="{StaticResource EyebrowStyle}"/>
-              <TextBlock Text="Identify the vehicle" Style="{StaticResource SectionTitleStyle}"/>
-            </StackPanel>
-
-            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,0">
-              <TextBlock Text="Chassis Code" Style="{StaticResource FieldLabelStyle}"/>
-              <TextBox Text="{Binding ChassisCode, UpdateSourceTrigger=PropertyChanged}"
-                       Style="{StaticResource ChassisTextBoxStyle}"/>
-            </StackPanel>
-            <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,8,0">
-              <TextBlock Text="Chassis Number" Style="{StaticResource FieldLabelStyle}"/>
-              <TextBox Text="{Binding ChassisNumber, UpdateSourceTrigger=PropertyChanged}"
-                       Style="{StaticResource ChassisTextBoxStyle}"/>
-            </StackPanel>
-            <Border Grid.Row="1" Grid.Column="2" VerticalAlignment="Bottom"
-                    Style="{StaticResource SuccessBadgeStyle}">
-              <TextBlock Text="{Binding LookupBadge}"
-                         Style="{StaticResource BannerTextStyle}"
-                         Foreground="{StaticResource SuccessTextBrush}"
-                         VerticalAlignment="Center" MaxWidth="220"/>
-            </Border>
-
-            <Border Grid.Row="2" Grid.ColumnSpan="3"
-                    Style="{StaticResource DangerBannerStyle}"
-                    Visibility="{Binding HasDuplicate, Converter={StaticResource BoolToVis}}">
-              <TextBlock Text="{Binding DuplicateWarning}"
-                         Style="{StaticResource BannerTextStyle}"
-                         Foreground="{StaticResource DangerTextBrush}"/>
-            </Border>
-          </Grid>
-        </Border>
-
-        <!-- Buyer | Pricing side by side -->
+        <!-- Invoice & Destination | Customer & Consignee -->
         <Grid Margin="0,0,0,12">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -151,7 +169,7 @@
 
           <Border Grid.Column="0" Style="{StaticResource CardSurfaceStyle}" Margin="0,0,6,0" Padding="14">
             <StackPanel>
-              <ctrl:SectionHeader Eyebrow="BUYER" Title="Customer"/>
+              <ctrl:SectionHeader Eyebrow="INVOICE" Title="Invoice &amp; Destination"/>
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*"/>
@@ -163,83 +181,211 @@
                   <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel Margin="0,0,6,10">
-                  <TextBlock Text="Full Name" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding CustomerName, UpdateSourceTrigger=PropertyChanged}"/>
+                  <TextBlock Text="Invoice No" Style="{StaticResource FieldLabelStyle}"/>
+                  <TextBox Text="{Binding InvoiceNumber, UpdateSourceTrigger=PropertyChanged}"
+                           ToolTip="Leave blank to auto-generate INV-YYYY-####"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Company" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding CompanyName, UpdateSourceTrigger=PropertyChanged}"/>
+                  <TextBlock Text="Date" Style="{StaticResource FieldLabelStyle}"/>
+                  <DatePicker SelectedDate="{Binding InvoiceDate}" HorizontalAlignment="Stretch"/>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Margin="0,0,6,10">
-                  <TextBlock Text="Phone" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding CustomerPhone, UpdateSourceTrigger=PropertyChanged}"/>
+                  <TextBlock Text="Port" Style="{StaticResource FieldLabelStyle}"/>
+                  <TextBox Text="{Binding DestinationPort, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Email" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding CustomerEmail, UpdateSourceTrigger=PropertyChanged}"/>
+                  <TextBlock Text="Country" Style="{StaticResource FieldLabelStyle}"/>
+                  <TextBox Text="{Binding DestinationCountry, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
-                <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
-                  <TextBlock Text="Address" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding CustomerAddress, UpdateSourceTrigger=PropertyChanged}"/>
+                <StackPanel Grid.Row="2" Margin="0,0,6,0">
+                  <TextBlock Text="Trade Term" Style="{StaticResource FieldLabelStyle}"/>
+                  <ComboBox ItemsSource="{Binding TradeTerms}" SelectedItem="{Binding TradeTerm}" IsEditable="True"/>
+                </StackPanel>
+                <StackPanel Grid.Row="2" Grid.Column="1" Margin="6,0,0,0">
+                  <TextBlock Text="Price *" Style="{StaticResource FieldLabelStyle}"/>
+                  <DockPanel>
+                    <ComboBox DockPanel.Dock="Left"
+                              Width="88"
+                              Margin="0,0,6,0"
+                              ItemsSource="{Binding Currencies}"
+                              Text="{Binding Currency, UpdateSourceTrigger=PropertyChanged}"
+                              IsEditable="True"
+                              ToolTip="Invoice currency — enter the amount already converted; no FX rate is applied"/>
+                    <Border CornerRadius="6" Padding="2">
+                      <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource RequiredFieldHighlightStyle}">
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding PriceFieldWarning}" Value="True">
+                              <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+                              <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </Border.Style>
+                      <TextBox Text="{Binding PriceAmount, UpdateSourceTrigger=PropertyChanged}"
+                               beh:NumericInput.Kind="Decimal"
+                               FontFamily="{StaticResource ChassisMonoFont}"
+                               Foreground="{StaticResource ChassisHighlightBrush}"/>
+                    </Border>
+                  </DockPanel>
                 </StackPanel>
               </Grid>
+              <TextBlock Text="Bank Profile" Style="{StaticResource FieldLabelStyle}" Margin="0,12,0,5"/>
+              <ComboBox ItemsSource="{Binding BankProfiles}"
+                        SelectedItem="{Binding SelectedBankProfile}"
+                        DisplayMemberPath="ProfileName"/>
             </StackPanel>
           </Border>
 
           <Border Grid.Column="1" Style="{StaticResource CardSurfaceStyle}" Margin="6,0,0,0" Padding="14">
             <StackPanel>
-              <ctrl:SectionHeader Eyebrow="PRICING" Title="Sale &amp; Tax"/>
-              <Grid>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <StackPanel Margin="0,0,6,10">
-                  <TextBlock Text="Sale Price" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding SalePrice, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Tax" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding TaxAmount, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Margin="0,0,6,10">
-                  <TextBlock Text="Additional Fees" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding AdditionalFees, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Total" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding TotalAmount}" IsReadOnly="True" FontWeight="Bold"
-                           FontFamily="{StaticResource ChassisMonoFont}"
-                           Foreground="{StaticResource ChassisHighlightBrush}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="2" Margin="0,0,6,10">
-                  <TextBlock Text="Currency" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding Currency, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-                <StackPanel Grid.Row="2" Grid.Column="1" Margin="6,0,0,10">
-                  <TextBlock Text="Payment Method" Style="{StaticResource FieldLabelStyle}"/>
-                  <TextBox Text="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
-              </Grid>
-              <TextBlock Text="Invoice Notes" Style="{StaticResource FieldLabelStyle}" Margin="0,4,0,5"/>
-              <TextBox Text="{Binding InvoiceNotes, UpdateSourceTrigger=PropertyChanged}"
-                       AcceptsReturn="True" Height="56" TextWrapping="Wrap"
-                       HorizontalAlignment="Stretch"
+              <ctrl:SectionHeader Eyebrow="BUYER" Title="Customer &amp; Consignee"/>
+              <TextBlock Text="Customer Name *" Style="{StaticResource FieldLabelStyle}"/>
+              <Border Margin="0,0,0,10" CornerRadius="6" Padding="2">
+                <Border.Style>
+                  <Style TargetType="Border" BasedOn="{StaticResource RequiredFieldHighlightStyle}">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding CustomerNameWarning}" Value="True">
+                        <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Border.Style>
+                <TextBox Text="{Binding CustomerName, UpdateSourceTrigger=PropertyChanged}"/>
+              </Border>
+              <TextBlock Text="Customer Address" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding CustomerAddress, UpdateSourceTrigger=PropertyChanged}"
+                       AcceptsReturn="True" Height="52" TextWrapping="Wrap" Margin="0,0,0,10"
+                       PreviewMouseWheel="OnChildPreviewMouseWheel"/>
+              <CheckBox Content="Consignee same as Customer"
+                        IsChecked="{Binding IsConsigneeSameAsCustomer}"
+                        Margin="0,0,0,10"
+                        FontFamily="{StaticResource BodyFont}"
+                        Foreground="{StaticResource TextPrimaryBrush}"/>
+              <TextBlock Text="Consignee Name" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding ConsigneeName, UpdateSourceTrigger=PropertyChanged}"
+                       IsEnabled="{Binding IsConsigneeSameAsCustomer, Converter={StaticResource InverseBool}}"
+                       Margin="0,0,0,10"/>
+              <TextBlock Text="Consignee Address" Style="{StaticResource FieldLabelStyle}"/>
+              <TextBox Text="{Binding ConsigneeAddress, UpdateSourceTrigger=PropertyChanged}"
+                       IsEnabled="{Binding IsConsigneeSameAsCustomer, Converter={StaticResource InverseBool}}"
+                       AcceptsReturn="True" Height="52" TextWrapping="Wrap"
                        PreviewMouseWheel="OnChildPreviewMouseWheel"/>
             </StackPanel>
           </Border>
         </Grid>
 
-        <!-- Vehicle full width -->
+        <!-- Vehicle specifications with chassis plate -->
         <Border Style="{StaticResource CardSurfaceStyle}" Margin="0,0,0,12" Padding="14">
           <StackPanel>
-            <ctrl:SectionHeader Eyebrow="VEHICLE" Title="Vehicle Details"/>
-            <Grid Margin="0,0,0,10">
+            <ctrl:SectionHeader Eyebrow="VEHICLE" Title="Vehicle Specifications"/>
+
+            <Border Style="{StaticResource ChassisPlateCardStyle}" Margin="0,0,0,12" Padding="12">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.ColumnSpan="3" Text="CHASSIS PLATE" Style="{StaticResource EyebrowStyle}" Margin="0,0,0,8"/>
+                <StackPanel Grid.Row="1" Margin="0,0,8,0">
+                  <TextBlock Text="Chassis Code *" Style="{StaticResource FieldLabelStyle}"/>
+                  <Border CornerRadius="6" Padding="2">
+                    <Border.Style>
+                      <Style TargetType="Border" BasedOn="{StaticResource RequiredFieldHighlightStyle}">
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding ChassisCodeWarning}" Value="True">
+                            <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Border.Style>
+                    <TextBox Text="{Binding ChassisCode, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource ChassisTextBoxStyle}"/>
+                  </Border>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,8,0">
+                  <TextBlock Text="Chassis Number *" Style="{StaticResource FieldLabelStyle}"/>
+                  <Border CornerRadius="6" Padding="2">
+                    <Border.Style>
+                      <Style TargetType="Border" BasedOn="{StaticResource RequiredFieldHighlightStyle}">
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding ChassisNumberWarning}" Value="True">
+                            <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Border.Style>
+                    <TextBox Text="{Binding ChassisNumber, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource ChassisTextBoxStyle}"/>
+                  </Border>
+                </StackPanel>
+                <Border Grid.Row="1" Grid.Column="2" VerticalAlignment="Bottom"
+                        Style="{StaticResource SuccessBadgeStyle}">
+                  <TextBlock Text="{Binding LookupBadge}"
+                             Style="{StaticResource BannerTextStyle}"
+                             Foreground="{StaticResource SuccessTextBrush}"
+                             VerticalAlignment="Center" MaxWidth="220"/>
+                </Border>
+              </Grid>
+            </Border>
+
+            <Border Style="{StaticResource DangerBannerStyle}" Margin="0,0,0,12"
+                    Visibility="{Binding HasDuplicate, Converter={StaticResource BoolToVis}}">
+              <TextBlock Text="{Binding DuplicateWarning}"
+                         Style="{StaticResource BannerTextStyle}"
+                         Foreground="{StaticResource DangerTextBrush}"/>
+            </Border>
+
+            <!-- Multi-model chassis picker -->
+            <Border Style="{StaticResource MultiModelPickerStyle}"
+                    Visibility="{Binding RequiresModelSelection, Converter={StaticResource BoolToVis}}">
+              <StackPanel>
+                <TextBlock Text="Multiple Models Found for Chassis Code"
+                           Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,4"/>
+                <TextBlock Text="Select the correct make/model to auto-fill CC, body, doors, and fuel."
+                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,10"/>
+                <ItemsControl ItemsSource="{Binding ChassisModelOptions}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Button Style="{StaticResource MultiModelOptionButtonStyle}"
+                              Command="{Binding DataContext.SelectChassisModelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}">
+                        <StackPanel>
+                          <TextBlock Text="{Binding DisplayLabel}" FontWeight="SemiBold"
+                                     FontFamily="{StaticResource BodyFont}"
+                                     Foreground="{StaticResource TextPrimaryBrush}"/>
+                          <TextBlock Text="{Binding RecommendationBadge}"
+                                     Style="{StaticResource EyebrowStyle}" Margin="0,4,0,0"
+                                     Visibility="{Binding IsRecommended, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource WarningBannerStyle}" Margin="0,0,0,12"
+                    Visibility="{Binding VerificationPrompt, Converter={StaticResource NullOrEmptyToVis}}">
+              <TextBlock Text="{Binding VerificationPrompt}"
+                         Style="{StaticResource BannerTextStyle}"
+                         Foreground="{StaticResource WarningTextBrush}"/>
+            </Border>
+
+            <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -250,58 +396,132 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
 
               <StackPanel Margin="0,0,8,10">
+                <TextBlock Text="Stock No" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding StockNumber, UpdateSourceTrigger=PropertyChanged}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Margin="0,0,8,10">
                 <TextBlock Text="Make" Style="{StaticResource FieldLabelStyle}"/>
                 <TextBox Text="{Binding Make, UpdateSourceTrigger=PropertyChanged}"/>
               </StackPanel>
-              <StackPanel Grid.Column="1" Margin="0,0,8,10">
+              <StackPanel Grid.Column="2" Margin="0,0,8,10">
                 <TextBlock Text="Model" Style="{StaticResource FieldLabelStyle}"/>
                 <TextBox Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}"/>
               </StackPanel>
-              <StackPanel Grid.Column="2" Margin="0,0,8,10">
-                <TextBlock Text="Grade / Trim" Style="{StaticResource FieldLabelStyle}"/>
-                <TextBox Text="{Binding GradeTrim, UpdateSourceTrigger=PropertyChanged}"/>
-              </StackPanel>
               <StackPanel Grid.Column="3" Margin="0,0,0,10">
-                <TextBlock Text="Year" Style="{StaticResource FieldLabelStyle}"/>
-                <TextBox Text="{Binding ManufacturingYear, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Text="CC" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding EngineCapacityCc, UpdateSourceTrigger=PropertyChanged}"
+                         beh:NumericInput.Kind="Integer"/>
               </StackPanel>
 
               <StackPanel Grid.Row="1" Margin="0,0,8,10">
-                <TextBlock Text="Engine Cc" Style="{StaticResource FieldLabelStyle}"/>
-                <TextBox Text="{Binding EngineCapacityCc, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Text="Color *" Style="{StaticResource FieldLabelStyle}"/>
+                <Border CornerRadius="6" Padding="2">
+                  <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource RequiredFieldHighlightStyle}">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding ColorFieldWarning}" Value="True">
+                          <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+                          <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Border.Style>
+                  <ComboBox IsEditable="True"
+                            ItemsSource="{Binding ColorSuggestions}"
+                            Text="{Binding ExteriorColor, UpdateSourceTrigger=PropertyChanged}"/>
+                </Border>
               </StackPanel>
               <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,8,10">
-                <TextBlock Text="Color" Style="{StaticResource FieldLabelStyle}"/>
-                <TextBox Text="{Binding ExteriorColor, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Text="Year *" Style="{StaticResource FieldLabelStyle}"/>
+                <Border CornerRadius="6" Padding="2">
+                  <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource RequiredFieldHighlightStyle}">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding YearFieldWarning}" Value="True">
+                          <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+                          <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Border.Style>
+                  <TextBox Text="{Binding ManufacturingYear, UpdateSourceTrigger=PropertyChanged}"
+                           beh:NumericInput.Kind="Integer"/>
+                </Border>
               </StackPanel>
               <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,8,10">
-                <TextBlock Text="Fuel" Style="{StaticResource FieldLabelStyle}"/>
-                <ComboBox ItemsSource="{Binding FuelTypes}" SelectedItem="{Binding FuelType}"/>
+                <TextBlock Text="Odometer *" Style="{StaticResource FieldLabelStyle}"/>
+                <Border CornerRadius="6" Padding="2">
+                  <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource RequiredFieldHighlightStyle}">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding MileageFieldWarning}" Value="True">
+                          <Setter Property="Background" Value="{StaticResource WarningBackgroundBrush}"/>
+                          <Setter Property="BorderBrush" Value="{StaticResource WarningTextBrush}"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Border.Style>
+                  <DockPanel>
+                    <ComboBox DockPanel.Dock="Right" Width="72"
+                              ItemsSource="{Binding MileageUnits}" SelectedItem="{Binding MileageUnit}"/>
+                    <TextBox Text="{Binding Mileage, UpdateSourceTrigger=PropertyChanged}"
+                             beh:NumericInput.Kind="Integer"
+                             Margin="0,0,6,0"/>
+                  </DockPanel>
+                </Border>
               </StackPanel>
               <StackPanel Grid.Row="1" Grid.Column="3" Margin="0,0,0,10">
-                <TextBlock Text="Transmission" Style="{StaticResource FieldLabelStyle}"/>
-                <ComboBox ItemsSource="{Binding Transmissions}" SelectedItem="{Binding Transmission}"/>
+                <TextBlock Text="Doors" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding Doors, UpdateSourceTrigger=PropertyChanged}"
+                         beh:NumericInput.Kind="Integer"/>
               </StackPanel>
 
-              <StackPanel Grid.Row="2" Margin="0,0,8,0">
-                <TextBlock Text="Mileage" Style="{StaticResource FieldLabelStyle}"/>
-                <DockPanel>
-                  <ComboBox DockPanel.Dock="Right" Width="80"
-                            ItemsSource="{Binding MileageUnits}" SelectedItem="{Binding MileageUnit}"/>
-                  <TextBox Text="{Binding Mileage, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,6,0"/>
-                </DockPanel>
+              <StackPanel Grid.Row="2" Margin="0,0,8,10">
+                <TextBlock Text="Condition" Style="{StaticResource FieldLabelStyle}"/>
+                <ComboBox ItemsSource="{Binding Conditions}" SelectedItem="{Binding Condition}"/>
               </StackPanel>
-              <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,8,0">
-                <TextBlock Text="Auction Grade" Style="{StaticResource FieldLabelStyle}"/>
-                <TextBox Text="{Binding AuctionGrade, UpdateSourceTrigger=PropertyChanged}"/>
+              <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,8,10">
+                <TextBlock Text="Steering" Style="{StaticResource FieldLabelStyle}"/>
+                <ComboBox ItemsSource="{Binding SteeringOptions}" SelectedItem="{Binding Steering}"/>
+              </StackPanel>
+              <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,0,8,10">
+                <TextBlock Text="Engine No." Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding EngineNumber, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource ChassisTextBoxStyle}" FontSize="13"/>
+              </StackPanel>
+              <StackPanel Grid.Row="2" Grid.Column="3" Margin="0,0,0,10">
+                <TextBlock Text="Seats" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding Seats, UpdateSourceTrigger=PropertyChanged}"
+                         beh:NumericInput.Kind="Integer"/>
+              </StackPanel>
+
+              <StackPanel Grid.Row="3" Margin="0,0,8,0">
+                <TextBlock Text="Body" Style="{StaticResource FieldLabelStyle}"/>
+                <ComboBox ItemsSource="{Binding BodyTypes}" SelectedItem="{Binding BodyType}" IsEditable="True"/>
+              </StackPanel>
+              <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,0,8,0">
+                <TextBlock Text="Fuel" Style="{StaticResource FieldLabelStyle}"/>
+                <ComboBox ItemsSource="{Binding FuelTypes}" SelectedItem="{Binding FuelType}" IsEditable="True"/>
+              </StackPanel>
+              <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,0,8,0">
+                <TextBlock Text="Unladen Weight (KG)" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding UnladenWeightKg, UpdateSourceTrigger=PropertyChanged}"
+                         beh:NumericInput.Kind="Integer"/>
+              </StackPanel>
+              <StackPanel Grid.Row="3" Grid.Column="3" Margin="0,0,0,0">
+                <TextBlock Text="{Binding Currency, StringFormat=Total ({0})}" Style="{StaticResource FieldLabelStyle}"/>
+                <TextBox Text="{Binding TotalAmount, StringFormat=N0, Mode=OneWay}" IsReadOnly="True" FontWeight="Bold"
+                         FontFamily="{StaticResource ChassisMonoFont}"
+                         Foreground="{StaticResource ChassisHighlightBrush}"/>
               </StackPanel>
             </Grid>
-            <TextBlock Text="History Notes" Style="{StaticResource FieldLabelStyle}"/>
+            <TextBlock Text="History Notes" Style="{StaticResource FieldLabelStyle}" Margin="0,12,0,5"/>
             <TextBox Text="{Binding HistoryNotes, UpdateSourceTrigger=PropertyChanged}"
-                     AcceptsReturn="True" Height="56" TextWrapping="Wrap"
+                     AcceptsReturn="True" Height="48" TextWrapping="Wrap"
                      HorizontalAlignment="Stretch"
                      PreviewMouseWheel="OnChildPreviewMouseWheel"/>
           </StackPanel>

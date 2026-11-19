@@ -3,6 +3,7 @@ using System.Windows.Media;
 using CarInvoice.Core.Interfaces;
 using CarInvoice.Core.Services;
 using CarInvoice.Data;
+using CarInvoice.Desktop.Behaviors;
 using CarInvoice.Desktop.Services;
 using CarInvoice.Desktop.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,6 +35,7 @@ public partial class App : Application
             services.AddSingleton<IOutlookIngestionService, OutlookIngestionService>();
             services.AddSingleton<IExcelService, ExcelService>();
             services.AddSingleton<IWordInvoiceGeneratorService, WordInvoiceGeneratorService>();
+            services.AddSingleton<IDictionaryLearningService, DictionaryLearningService>();
 
             services.AddSingleton<CreateInvoiceViewModel>();
             services.AddSingleton<VehiclesViewModel>();
@@ -66,6 +68,10 @@ public partial class App : Application
     {
         try
         {
+            // Before any window: ComboBox wheel must not change selection when closed,
+            // and must not be stolen by page ScrollViewers when the dropdown is open.
+            ComboBoxWheelFix.Register();
+
             await Host.StartAsync();
             ApplyShakenWashiAccent();
 
@@ -74,6 +80,7 @@ public partial class App : Application
             var word = Host.Services.GetRequiredService<IWordInvoiceGeneratorService>();
             var settings = Host.Services.GetRequiredService<IAppSettingsService>();
             await settings.LoadAsync();
+            settings.Currency = AppSettingsService.NormalizeCurrency(settings.Currency);
 
             var appData = System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CarInvoice");
