@@ -25,7 +25,7 @@ Memorable cues:
 3. Merge order in `App.xaml`: Wpf.Ui dictionaries first, then `Themes/JapaneseTheme.xaml`.
 4. **Never** call `SetSystemAccent()` / `ApplicationAccentColorManager.ApplySystemAccent()` — that pulls the Windows accent (often purple) onto Primary buttons. Startup must call `ApplicationAccentColorManager.Apply(Ai-iro, …)` + `IThemeService.SetAccent(Ai-iro)` as in `App.xaml.cs` (`#2B4C7E` / `#1F385E` / `#1D5B9E`).
 5. Chassis Code / Chassis Number inputs use **`ChassisTextBoxStyle`** (Cascadia Mono) inside **`ChassisPlateCardStyle`**.
-6. File / folder path fields use **`PathTextBoxStyle`** (Consolas / Cascadia Mono, Sumi ink) — **never** Yu Gothic / `ChassisTextBoxStyle` on paths like `%LocalAppData%\CarInvoice\…`.
+6. File / folder path fields use **`PathTextBoxStyle`** / display paths use **`PathTextStyle`** (`PathFont` = Consolas) — **never** Yu Gothic / `ChassisTextBoxStyle` / `BodyFont` on paths like `%LocalAppData%\CarInvoice\…`.
 7. Status semantics are fixed:
    - Duplicate chassis / repair history → `DangerTextBrush` on `DangerBackgroundBrush` (+ `BannerTextStyle` / `DangerBannerStyle`)
    - Clean / verified lookup → `SuccessTextBrush` on `SuccessBackgroundBrush` (+ `SuccessBadgeStyle`)
@@ -75,7 +75,8 @@ Memorable cues:
 | `DisplayFont` | Yu Gothic UI, Meiryo UI, Segoe UI Variable Display, Segoe UI | Brand, page titles, section titles, eyebrows, DataGrid headers |
 | `BodyFont` | Yu Gothic UI, Meiryo UI, Segoe UI Variable Text, Segoe UI | Body, fields, buttons, default `UserControl`/`Window` |
 | `ChassisMonoFont` | Cascadia Mono, Consolas, Courier New | Chassis plates, totals, raw source monospace panes |
-| Path fields | Consolas, Cascadia Mono, Courier New via `PathTextBoxStyle` | File/folder paths only |
+| `PathFont` | Consolas, Cascadia Mono, Courier New | File/folder paths only — never BodyFont/Yu Gothic (`\` renders as ¥) |
+| Path fields | `PathTextBoxStyle` / `PathTextStyle` using `PathFont` | Settings paths, success-banner path, DOCUMENT column |
 
 ### Text styles (always prefer these)
 
