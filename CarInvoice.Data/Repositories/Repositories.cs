@@ -34,7 +34,7 @@ public class VehicleRepository : Repository<Vehicle>, IVehicleRepository
     public VehicleRepository(AppDbContext db) : base(db) { }
 
     public Task<Vehicle?> FindByChassisNumberAsync(string chassisNumber, CancellationToken ct = default)
-        => Set.AsNoTracking().FirstOrDefaultAsync(v => v.ChassisNumber == chassisNumber, ct);
+        => Set.FirstOrDefaultAsync(v => v.ChassisNumber == chassisNumber, ct);
 
     public Task<Vehicle?> FindByNormalizedAsync(string fullChassisNormalized, CancellationToken ct = default)
         => Set.AsNoTracking().FirstOrDefaultAsync(v => v.FullChassisNormalized == fullChassisNormalized, ct);
@@ -157,6 +157,34 @@ public class ChassisLookupRepository : Repository<ChassisCodeLookup>, IChassisLo
         var code = chassisCode.Trim().ToUpperInvariant();
         return Set.AsNoTracking().FirstOrDefaultAsync(c => c.ChassisCode == code, ct);
     }
+
+    public Task<List<ChassisCodeLookup>> FindAllByCodeAsync(string chassisCode, CancellationToken ct = default)
+    {
+        var code = chassisCode.Trim().ToUpperInvariant();
+        return Set.AsNoTracking()
+            .Where(c => c.ChassisCode == code)
+            .OrderBy(c => c.DefaultMake)
+            .ThenBy(c => c.DefaultModel)
+            .ToListAsync(ct);
+    }
+
+    public async Task<ChassisCodeLookup?> FindExactAsync(
+        string chassisCode,
+        string make,
+        string model,
+        string? serialPrefixOrRange = null,
+        CancellationToken ct = default)
+    {
+        var code = chassisCode.Trim().ToUpperInvariant();
+        var mk = make.Trim();
+        var md = model.Trim();
+        var serial = string.IsNullOrWhiteSpace(serialPrefixOrRange) ? null : serialPrefixOrRange.Trim();
+        var rows = await Set.Where(c => c.ChassisCode == code).ToListAsync(ct);
+        return rows.FirstOrDefault(c =>
+            c.DefaultMake.Equals(mk, StringComparison.OrdinalIgnoreCase) &&
+            c.DefaultModel.Equals(md, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(c.SerialPrefixOrRange, serial, StringComparison.OrdinalIgnoreCase));
+    }
 }
 
 public class GlossaryRepository : Repository<JapaneseTermGlossary>, IGlossaryRepository
@@ -173,6 +201,23 @@ public class GlossaryRepository : Repository<JapaneseTermGlossary>, IGlossaryRep
             .ToListAsync(ct);
 }
 
+public class BankProfileRepository : Repository<BankProfile>, IBankProfileRepository
+{
+    public BankProfileRepository(AppDbContext db) : base(db) { }
+
+    public Task<BankProfile?> GetDefaultAsync(CancellationToken ct = default)
+        => Set.AsNoTracking()
+            .OrderByDescending(b => b.IsDefault)
+            .ThenBy(b => b.Id)
+            .FirstOrDefaultAsync(ct);
+
+    public Task<List<BankProfile>> GetAllOrderedAsync(CancellationToken ct = default)
+        => Set.AsNoTracking()
+            .OrderByDescending(b => b.IsDefault)
+            .ThenBy(b => b.ProfileName)
+            .ToListAsync(ct);
+}
+
 public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _db;
@@ -185,6 +230,7 @@ public sealed class UnitOfWork : IUnitOfWork
         Invoices = new InvoiceRepository(db);
         ChassisLookups = new ChassisLookupRepository(db);
         Glossary = new GlossaryRepository(db);
+        BankProfiles = new BankProfileRepository(db);
     }
 
     public IVehicleRepository Vehicles { get; }
@@ -192,6 +238,7 @@ public sealed class UnitOfWork : IUnitOfWork
     public IInvoiceRepository Invoices { get; }
     public IChassisLookupRepository ChassisLookups { get; }
     public IGlossaryRepository Glossary { get; }
+    public IBankProfileRepository BankProfiles { get; }
 
     public Task<int> SaveChangesAsync(CancellationToken ct = default)
         => _db.SaveChangesAsync(ct);

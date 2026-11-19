@@ -1,21 +1,23 @@
 using System.Text.RegularExpressions;
 using CarInvoice.Core.DTOs;
+using CarInvoice.Core.Entities;
 using CarInvoice.Core.Interfaces;
 
 namespace CarInvoice.Core.Services;
 
 /// <summary>
-/// Parses messy combined chassis strings (e.g. DBA-NZE161-7048291) into code + number,
-/// suggests make/model from the local lookup table, and warns on duplicate chassis numbers.
+/// Parses messy combined chassis strings, resolves multi-model lookups,
+/// and warns on duplicate chassis numbers.
 /// </summary>
 public sealed class ChassisParserService : IChassisParserService
 {
     private static readonly Regex VinRegex = new(@"\b([A-HJ-NPR-Z0-9]{17})\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex ChassisCodeRegex = new(
-        @"(?:DBA|CBA|LDA|DAA|5AA|ABA|GF|GH|LA|DBA)?[-\s]?(?<code>[A-Z]{1,3}[0-9]{1,3}[A-Z]?)\s*[-#]?\s*(?<num>[0-9]{4,8})",
+        @"(?:DBA|CBA|LDA|DAA|5AA|ABA|GF|GH|LA)?[-\s]?(?<code>[A-Z]{1,4}[0-9]{1,3}[A-Z0-9]{0,3})\s*[-#]?\s*(?<num>[0-9]{4,8})",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex LooseCodeRegex = new(@"\b(?<code>[A-Z]{1,3}\d{1,3}[A-Z]?)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex LooseCodeRegex = new(@"\b(?<code>[A-Z]{1,4}\d{1,3}[A-Z0-9]{0,3})\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex LooseNumberRegex = new(@"\b(?<num>\d{5,8})\b", RegexOptions.Compiled);
+    private static readonly Regex NumericRangeRegex = new(@"^(?<lo>\d+)\s*[-–]\s*(?<hi>\d+)$", RegexOptions.Compiled);
 
     private readonly IUnitOfWork _uow;
 
@@ -59,13 +61,11 @@ public sealed class ChassisParserService : IChassisParserService
         }
         else
         {
-            // Fallback: split on whitespace / hyphen
             var parts = Regex.Split(input, @"[\s\-#]+")
                 .Where(p => !string.IsNullOrWhiteSpace(p))
                 .Select(p => p.Trim())
                 .ToList();
 
-            // Strip Japanese registration prefixes like DBA-
             parts = parts
                 .Where(p => !Regex.IsMatch(p, @"^(DBA|CBA|LDA|DAA|5AA|ABA|GF|GH)$", RegexOptions.IgnoreCase))
                 .ToList();
@@ -86,17 +86,51 @@ public sealed class ChassisParserService : IChassisParserService
         return result;
     }
 
+    /// <summary>Resolves all lookup rows for a chassis code, ranking serial-range hits first.</summary>
+    public async Task<ChassisLookupResult> ResolveLookupsAsync(
+        string chassisCode,
+        string? chassisNumber = null,
+        CancellationToken ct = default)
+    {
+        var lookup = new ChassisLookupResult();
+        if (string.IsNullOrWhiteSpace(chassisCode))
+            return lookup;
+
+        var matches = await _uow.ChassisLookups.FindAllByCodeAsync(chassisCode, ct);
+        if (matches.Count == 0)
+            return lookup;
+
+        ChassisCodeLookup? recommended = null;
+        if (!string.IsNullOrWhiteSpace(chassisNumber))
+        {
+            recommended = matches.FirstOrDefault(m => SerialMatches(m.SerialPrefixOrRange, chassisNumber));
+            if (recommended is not null)
+            {
+                matches = matches
+                    .OrderByDescending(m => ReferenceEquals(m, recommended))
+                    .ThenBy(m => m.DefaultMake)
+                    .ThenBy(m => m.DefaultModel)
+                    .ToList();
+            }
+        }
+
+        lookup.Matches = matches;
+        lookup.RecommendedMatch = recommended;
+        return lookup;
+    }
+
     private async Task ApplyLookupAndDuplicateAsync(ChassisParseResult result, CancellationToken ct)
     {
         if (!string.IsNullOrWhiteSpace(result.ChassisCode))
         {
-            var lookup = await _uow.ChassisLookups.FindByCodeAsync(result.ChassisCode, ct);
-            if (lookup is not null)
+            result.Lookup = await ResolveLookupsAsync(result.ChassisCode, result.ChassisNumber, ct);
+
+            if (result.Lookup.SingleMatch is { } single)
+                ApplySuggestion(result, single);
+            else if (result.Lookup.RecommendedMatch is { } recommended && result.Lookup.Matches.Count > 1)
             {
-                result.SuggestedMake = lookup.DefaultMake;
-                result.SuggestedModel = lookup.DefaultModel;
-                result.SuggestedEngineCc = lookup.DefaultEngineCc;
-                result.SuggestedFuelType = lookup.DefaultFuelType;
+                // Recommend but do not auto-fill when multiple models exist.
+                result.SuggestedMake = null;
             }
         }
 
@@ -114,5 +148,49 @@ public sealed class ChassisParserService : IChassisParserService
                     (string.IsNullOrWhiteSpace(existing.HistoryNotes) ? ")" : $", history: {existing.HistoryNotes})");
             }
         }
+    }
+
+    private static void ApplySuggestion(ChassisParseResult result, ChassisCodeLookup lookup)
+    {
+        result.SuggestedMake = lookup.DefaultMake;
+        result.SuggestedModel = lookup.DefaultModel;
+        result.SuggestedEngineCc = lookup.DefaultEngineCc;
+        result.SuggestedFuelType = lookup.DefaultFuelType;
+        result.SuggestedBodyType = lookup.DefaultBodyType;
+        result.SuggestedDoors = lookup.DefaultDoors;
+        result.SuggestedSeats = lookup.DefaultSeats;
+        result.SuggestedEngineNumber = lookup.DefaultEngineNumber;
+    }
+
+    /// <summary>
+    /// Matches serial against "2000000-2999999" numeric ranges or "70xxxxx" / "70*" prefix patterns.
+    /// </summary>
+    public static bool SerialMatches(string? pattern, string chassisNumber)
+    {
+        if (string.IsNullOrWhiteSpace(pattern) || string.IsNullOrWhiteSpace(chassisNumber))
+            return false;
+
+        var serial = chassisNumber.Trim();
+        var p = pattern.Trim();
+
+        var range = NumericRangeRegex.Match(p);
+        if (range.Success && long.TryParse(serial, out var serialNum)
+            && long.TryParse(range.Groups["lo"].Value, out var lo)
+            && long.TryParse(range.Groups["hi"].Value, out var hi))
+        {
+            return serialNum >= lo && serialNum <= hi;
+        }
+
+        // Prefix with x/X/?/* wildcards for remaining digits, e.g. 70xxxxx
+        var prefixChars = new string(p.TakeWhile(c => char.IsLetterOrDigit(c) && c is not ('x' or 'X' or '?' or '*')).ToArray());
+        if (prefixChars.Length > 0 && serial.StartsWith(prefixChars, StringComparison.OrdinalIgnoreCase))
+        {
+            var wildcardLen = p.Length - prefixChars.Length;
+            if (wildcardLen <= 0) return serial.Equals(prefixChars, StringComparison.OrdinalIgnoreCase);
+            return serial.Length >= prefixChars.Length
+                   && (wildcardLen == 0 || serial.Length - prefixChars.Length <= Math.Max(wildcardLen, 8));
+        }
+
+        return serial.StartsWith(p, StringComparison.OrdinalIgnoreCase);
     }
 }

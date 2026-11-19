@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Compression;
 using System.Text;
 using CarInvoice.Core.DTOs;
@@ -8,8 +9,8 @@ using MiniSoftware;
 namespace CarInvoice.Core.Services;
 
 /// <summary>
-/// Generates invoice .docx files from a MiniWord template, creating a clean
-/// placeholder template on first run when none exists.
+/// Generates MDK-style export invoice .docx files from a MiniWord template,
+/// creating a placeholder template on first run when none exists.
 /// </summary>
 public sealed class WordInvoiceGeneratorService : IWordInvoiceGeneratorService
 {
@@ -18,9 +19,32 @@ public sealed class WordInvoiceGeneratorService : IWordInvoiceGeneratorService
     {
         Directory.CreateDirectory(templatesDirectory);
         var path = Path.Combine(templatesDirectory, "DefaultInvoiceTemplate.docx");
-        if (!File.Exists(path))
+        if (!File.Exists(path) || !TemplateLooksCurrent(path))
             CreatePlaceholderTemplate(path);
         return path;
+    }
+
+    private static bool TemplateLooksCurrent(string path)
+    {
+        try
+        {
+            using var zip = ZipFile.OpenRead(path);
+            var entry = zip.GetEntry("word/document.xml");
+            if (entry is null) return false;
+            using var stream = entry.Open();
+            using var reader = new StreamReader(stream);
+            var xml = reader.ReadToEnd();
+            // Regenerate when legacy "TOTAL USD" / dollar-only formatting is still baked in
+            return xml.Contains("{{InvoiceNo}}", StringComparison.Ordinal)
+                   && xml.Contains("{{CandF}}", StringComparison.Ordinal)
+                   && xml.Contains("{{ConsigneeName}}", StringComparison.Ordinal)
+                   && xml.Contains("{{Currency}}", StringComparison.Ordinal)
+                   && !xml.Contains("TOTAL USD", StringComparison.Ordinal);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <inheritdoc />
@@ -35,38 +59,95 @@ public sealed class WordInvoiceGeneratorService : IWordInvoiceGeneratorService
             templatePath = EnsureDefaultTemplate(Path.GetDirectoryName(templatePath) ?? "Templates");
 
         Directory.CreateDirectory(outputDirectory);
-        var safeNumber = string.Join("_", request.InvoiceNumber.Split(Path.GetInvalidFileNameChars()));
-        var outputPath = Path.Combine(outputDirectory, $"{safeNumber}_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
+        var chassisLabel = $"{request.ChassisCode}-{request.ChassisNumber}".Trim('-');
+        var fileBase = string.IsNullOrWhiteSpace(chassisLabel) || chassisLabel == "-"
+            ? string.Join("_", request.InvoiceNumber.Split(Path.GetInvalidFileNameChars()))
+            : string.Join("_", $"{chassisLabel}-INV".Split(Path.GetInvalidFileNameChars()));
+        var outputPath = Path.Combine(outputDirectory, $"{fileBase}.docx");
+        if (File.Exists(outputPath))
+            outputPath = Path.Combine(outputDirectory, $"{fileBase}_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
+
+        var price = request.PriceAmount > 0 ? request.PriceAmount : request.SalePrice;
+        var total = request.TotalAmount > 0 ? request.TotalAmount : price;
+        var currency = string.IsNullOrWhiteSpace(request.Currency)
+            ? "USD"
+            : request.Currency.Trim().ToUpperInvariant();
+        var maker = $"{request.Make} {request.Model}".Trim();
+        var odometer = $"{request.Mileage:N0} {request.MileageUnit}".Replace(",", "");
+        var unladen = request.UnladenWeightKg is > 0
+            ? $"{request.UnladenWeightKg.Value} KG"
+            : string.Empty;
 
         var values = new Dictionary<string, object>
         {
+            // Header & buyer
+            ["InvoiceNo"] = request.InvoiceNumber,
             ["InvoiceNumber"] = request.InvoiceNumber,
-            ["InvoiceDate"] = request.InvoiceDate.ToString("dd MMM yyyy"),
+            ["InvoiceDate"] = FormatInvoiceDate(request.InvoiceDate),
+            ["Port"] = request.DestinationPort ?? string.Empty,
+            ["Country"] = request.DestinationCountry ?? string.Empty,
             ["CustomerName"] = request.CustomerName,
+            ["CustomerAddress"] = request.CustomerAddress,
             ["CustomerPhone"] = request.CustomerPhone,
             ["CustomerEmail"] = request.CustomerEmail,
-            ["CustomerAddress"] = request.CustomerAddress,
             ["CompanyName"] = request.CompanyName ?? string.Empty,
+            ["ConsigneeName"] = string.IsNullOrWhiteSpace(request.ConsigneeName) ? request.CustomerName : request.ConsigneeName,
+            ["ConsigneeAddress"] = string.IsNullOrWhiteSpace(request.ConsigneeAddress) ? request.CustomerAddress : request.ConsigneeAddress,
+
+            // Vehicle row 1
+            ["StockNo"] = request.StockNumber ?? string.Empty,
+            ["Maker"] = maker,
             ["Make"] = request.Make,
             ["Model"] = request.Model,
-            ["GradeTrim"] = request.GradeTrim ?? string.Empty,
-            ["Year"] = request.Year.ToString(),
+            ["Chassis"] = chassisLabel,
             ["ChassisCode"] = request.ChassisCode,
             ["ChassisNumber"] = request.ChassisNumber,
+            ["CC"] = request.EngineCc?.ToString() ?? string.Empty,
             ["EngineCc"] = request.EngineCc?.ToString() ?? string.Empty,
-            ["EngineNumber"] = request.EngineNumber ?? string.Empty,
             ["Color"] = request.Color ?? string.Empty,
-            ["Mileage"] = $"{request.Mileage:N0} {request.MileageUnit}",
+            ["Year"] = request.Year.ToString(),
+            ["Odometer"] = odometer,
+            ["Mileage"] = odometer,
+            ["Door"] = request.Doors?.ToString() ?? string.Empty,
+
+            // Vehicle row 2
+            ["Condition"] = request.Condition,
+            ["Steering"] = request.Steering,
+            ["EngineNo"] = request.EngineNumber ?? string.Empty,
+            ["EngineNumber"] = request.EngineNumber ?? string.Empty,
+            ["Seat"] = request.Seats?.ToString() ?? string.Empty,
+            ["Body"] = request.BodyType ?? string.Empty,
+            ["Fuel"] = request.FuelType,
             ["FuelType"] = request.FuelType,
+            ["UnladenWeight"] = unladen,
+            ["CandF"] = FormatMoney(price, currency),
+            ["TradeTerm"] = request.TradeTerm,
+
+            // Bank & totals (from selected BankProfile + AppSettings currency)
+            ["BankName"] = request.BankName ?? string.Empty,
+            ["AccountHolderName"] = request.AccountHolderName ?? string.Empty,
+            ["AccountNo"] = request.AccountNumber ?? string.Empty,
+            ["AccountNumber"] = request.AccountNumber ?? string.Empty,
+            ["Branch"] = request.BranchName ?? string.Empty,
+            ["BranchCode"] = request.BranchCode ?? string.Empty,
+            ["BranchAddress"] = request.BranchAddress ?? string.Empty,
+            ["SwiftCode"] = request.SwiftCode ?? string.Empty,
+            ["IntermediaryBankName"] = request.IntermediaryBankName ?? string.Empty,
+            ["IntermediaryCountry"] = request.IntermediaryCountry ?? string.Empty,
+            ["IntermediaryBranch"] = request.IntermediaryBranch ?? string.Empty,
+            ["IntermediarySwiftCode"] = request.IntermediarySwiftCode ?? string.Empty,
+            // TotalUsd kept as alias for older custom templates
+            ["TotalUsd"] = FormatMoney(total, currency),
+            ["TotalAmount"] = FormatMoney(total, currency),
+            ["SalePrice"] = FormatMoney(price, currency),
+            ["TaxAmount"] = FormatMoney(request.TaxAmount, currency),
+            ["AdditionalFees"] = FormatMoney(request.AdditionalFees, currency),
+            ["Currency"] = currency,
+            ["PaymentMethod"] = request.PaymentMethod,
+            ["GradeTrim"] = request.GradeTrim ?? string.Empty,
             ["Transmission"] = request.Transmission,
             ["AuctionGrade"] = request.AuctionGrade ?? string.Empty,
             ["HistoryNotes"] = request.HistoryNotes ?? string.Empty,
-            ["SalePrice"] = FormatMoney(request.SalePrice, request.Currency),
-            ["TaxAmount"] = FormatMoney(request.TaxAmount, request.Currency),
-            ["AdditionalFees"] = FormatMoney(request.AdditionalFees, request.Currency),
-            ["TotalAmount"] = FormatMoney(request.TotalAmount, request.Currency),
-            ["Currency"] = request.Currency,
-            ["PaymentMethod"] = request.PaymentMethod,
             ["Notes"] = request.Notes ?? string.Empty,
         };
 
@@ -84,11 +165,16 @@ public sealed class WordInvoiceGeneratorService : IWordInvoiceGeneratorService
         return Task.FromResult(outputPath);
     }
 
+    private static string FormatInvoiceDate(DateTime date)
+        => date.ToString("dd-MMM-yy", CultureInfo.InvariantCulture).ToUpperInvariant();
+
+    /// <summary>Amount with ISO currency code from AppSettings / invoice (e.g. "USD 12,500").</summary>
     private static string FormatMoney(decimal amount, string currency)
-        => $"{currency} {amount:N2}";
+        => $"{currency} {amount.ToString("N0", CultureInfo.InvariantCulture)}";
 
     /// <summary>
-    /// Builds a minimal valid .docx (OOXML zip) with MiniWord-style {{Tag}} placeholders.
+    /// Builds a minimal valid .docx (OOXML zip) with MiniWord-style {{Tag}} placeholders
+    /// mirroring the MDK export invoice structure.
     /// </summary>
     private static void CreatePlaceholderTemplate(string path)
     {
@@ -96,35 +182,81 @@ public sealed class WordInvoiceGeneratorService : IWordInvoiceGeneratorService
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
             <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
               <w:body>
-                <w:p><w:r><w:rPr><w:b/><w:sz w:val="36"/></w:rPr><w:t>VEHICLE SALE INVOICE</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Invoice No: {{InvoiceNumber}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Date: {{InvoiceDate}}</w:t></w:r></w:p>
+                <w:p><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t>{{AccountHolderName}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>VEHICLE EXPORT INVOICE</w:t></w:r></w:p>
+                <w:p><w:r><w:t></w:t></w:r></w:p>
+                <w:p><w:r><w:t>Invoice No: {{InvoiceNo}}    Date: {{InvoiceDate}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>Port: {{Port}}    Country: {{Country}}</w:t></w:r></w:p>
                 <w:p><w:r><w:t></w:t></w:r></w:p>
                 <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>CUSTOMER</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Name: {{CustomerName}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Company: {{CompanyName}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Phone: {{CustomerPhone}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Email: {{CustomerEmail}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Address: {{CustomerAddress}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>{{CustomerName}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>{{CustomerAddress}}</w:t></w:r></w:p>
                 <w:p><w:r><w:t></w:t></w:r></w:p>
-                <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>VEHICLE</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Make / Model: {{Make}} {{Model}} {{GradeTrim}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Year: {{Year}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Chassis: {{ChassisCode}}-{{ChassisNumber}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Engine: {{EngineCc}} cc  No: {{EngineNumber}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Color: {{Color}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Mileage: {{Mileage}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Fuel / Transmission: {{FuelType}} / {{Transmission}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Auction Grade: {{AuctionGrade}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>History: {{HistoryNotes}}</w:t></w:r></w:p>
+                <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>CONSIGNEE</w:t></w:r></w:p>
+                <w:p><w:r><w:t>{{ConsigneeName}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>{{ConsigneeAddress}}</w:t></w:r></w:p>
                 <w:p><w:r><w:t></w:t></w:r></w:p>
-                <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>PRICING</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Sale Price: {{SalePrice}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Tax: {{TaxAmount}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Additional Fees: {{AdditionalFees}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Total: {{TotalAmount}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Payment: {{PaymentMethod}}</w:t></w:r></w:p>
-                <w:p><w:r><w:t>Notes: {{Notes}}</w:t></w:r></w:p>
+                <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>VEHICLE SPECIFICATION</w:t></w:r></w:p>
+                <w:tbl>
+                  <w:tblPr><w:tblW w:w="5000" w:type="pct"/></w:tblPr>
+                  <w:tr>
+                    <w:tc><w:p><w:r><w:t>Stock No</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Maker</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Chassis</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>CC</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Color</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Year</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Odometer</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Door</w:t></w:r></w:p></w:tc>
+                  </w:tr>
+                  <w:tr>
+                    <w:tc><w:p><w:r><w:t>{{StockNo}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Maker}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Chassis}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{CC}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Color}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Year}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Odometer}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Door}}</w:t></w:r></w:p></w:tc>
+                  </w:tr>
+                  <w:tr>
+                    <w:tc><w:p><w:r><w:t>Condition</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Steering</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Engine No</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Seat</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Body</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Fuel</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Unladen Wt</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{TradeTerm}}</w:t></w:r></w:p></w:tc>
+                  </w:tr>
+                  <w:tr>
+                    <w:tc><w:p><w:r><w:t>{{Condition}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Steering}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{EngineNo}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Seat}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Body}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{Fuel}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{UnladenWeight}}</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>{{CandF}}</w:t></w:r></w:p></w:tc>
+                  </w:tr>
+                </w:tbl>
+                <w:p><w:r><w:t></w:t></w:r></w:p>
+                <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>BANK DETAILS</w:t></w:r></w:p>
+                <w:p><w:r><w:t>Bank: {{BankName}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>Account Holder: {{AccountHolderName}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>Account No: {{AccountNo}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>Branch: {{Branch}} ({{BranchCode}})</w:t></w:r></w:p>
+                <w:p><w:r><w:t>Branch Address: {{BranchAddress}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>SWIFT: {{SwiftCode}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t></w:t></w:r></w:p>
+                <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>INTERMEDIARY BANK</w:t></w:r></w:p>
+                <w:p><w:r><w:t>{{IntermediaryBankName}} — {{IntermediaryCountry}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>{{IntermediaryBranch}}  SWIFT: {{IntermediarySwiftCode}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t></w:t></w:r></w:p>
+                <w:p><w:r><w:rPr><w:b/><w:sz w:val="28"/></w:rPr><w:t>TOTAL {{Currency}}: {{TotalAmount}}</w:t></w:r></w:p>
+                <w:p><w:r><w:t></w:t></w:r></w:p>
+                <w:p><w:r><w:t>We hereby certify that the above particulars are true and correct.</w:t></w:r></w:p>
+                <w:p><w:r><w:t>This vehicle is exported used for commercial purposes.</w:t></w:r></w:p>
                 <w:sectPr/>
               </w:body>
             </w:document>

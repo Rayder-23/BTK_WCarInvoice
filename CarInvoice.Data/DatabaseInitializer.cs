@@ -61,10 +61,36 @@ public static class DatabaseInitializer
             await db.ChassisCodeLookups.AddRangeAsync(SeedData.ChassisLookups, ct);
             await db.SaveChangesAsync(ct);
         }
+        else
+        {
+            if (!await db.ChassisCodeLookups.AnyAsync(c => c.ChassisCode == "VR2E26", ct))
+            {
+                var vr2 = SeedData.ChassisLookups.First(c => c.ChassisCode == "VR2E26");
+                await db.ChassisCodeLookups.AddAsync(vr2, ct);
+            }
+
+            // Ensure multi-model KSP130 PROBOX exists alongside VITZ.
+            if (!await db.ChassisCodeLookups.AnyAsync(
+                    c => c.ChassisCode == "KSP130" && c.DefaultModel.ToUpper() == "PROBOX", ct))
+            {
+                var probox = SeedData.ChassisLookups.First(c =>
+                    c.ChassisCode == "KSP130" &&
+                    c.DefaultModel.Equals("PROBOX", StringComparison.OrdinalIgnoreCase));
+                await db.ChassisCodeLookups.AddAsync(probox, ct);
+            }
+
+            await db.SaveChangesAsync(ct);
+        }
 
         if (!await db.JapaneseTermGlossary.AnyAsync(ct))
         {
             await db.JapaneseTermGlossary.AddRangeAsync(SeedData.GlossaryTerms, ct);
+            await db.SaveChangesAsync(ct);
+        }
+
+        if (!await db.BankProfiles.AnyAsync(ct))
+        {
+            await db.BankProfiles.AddRangeAsync(SeedData.BankProfiles, ct);
             await db.SaveChangesAsync(ct);
         }
     }
@@ -104,6 +130,7 @@ public static class DatabaseInitializer
         services.AddSingleton<Core.Interfaces.IInvoiceRepository, Repositories.InvoiceRepository>();
         services.AddSingleton<Core.Interfaces.IChassisLookupRepository, Repositories.ChassisLookupRepository>();
         services.AddSingleton<Core.Interfaces.IGlossaryRepository, Repositories.GlossaryRepository>();
+        services.AddSingleton<Core.Interfaces.IBankProfileRepository, Repositories.BankProfileRepository>();
 
         return services;
     }

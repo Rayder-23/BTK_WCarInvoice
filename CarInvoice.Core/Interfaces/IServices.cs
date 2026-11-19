@@ -8,7 +8,48 @@ namespace CarInvoice.Core.Interfaces;
 public interface IChassisParserService
 {
     Task<ChassisParseResult> ParseAsync(string rawInput, CancellationToken ct = default);
+    Task<ChassisLookupResult> ResolveLookupsAsync(string chassisCode, string? chassisNumber = null, CancellationToken ct = default);
     string Normalize(string chassisCode, string chassisNumber);
+}
+
+/// <summary>Auto-learns chassis lookups and glossary terms from completed invoices.</summary>
+public interface IDictionaryLearningService
+{
+    Task<DictionaryLearningResult> LearnFromInvoiceAsync(
+        string chassisCode,
+        string make,
+        string model,
+        int? engineCc,
+        string? bodyType,
+        int? doors,
+        int? seats,
+        string? fuelType,
+        string? engineNumber,
+        string? chassisNumber,
+        string? exteriorColor,
+        string? historyNotes,
+        string? rawSourceText,
+        CancellationToken ct = default);
+}
+
+/// <summary>Result summary for dictionary self-learning.</summary>
+public class DictionaryLearningResult
+{
+    public bool ChassisLearned { get; set; }
+    public string? ChassisMessage { get; set; }
+    public int GlossaryTermsAdded { get; set; }
+    public string? GlossaryMessage { get; set; }
+
+    public string? StatusMessage
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(ChassisMessage)) parts.Add(ChassisMessage);
+            if (!string.IsNullOrWhiteSpace(GlossaryMessage)) parts.Add(GlossaryMessage);
+            return parts.Count == 0 ? null : string.Join(" · ", parts);
+        }
+    }
 }
 
 /// <summary>Offline Japanese → English automotive glossary translator.</summary>
@@ -43,12 +84,30 @@ public interface IOutlookIngestionService
     ExtractedVehicleFields ExtractFields(string text);
 }
 
-/// <summary>Excel import/export for stock sheets and invoice ledgers.</summary>
+/// <summary>Excel import/export for stock sheets, invoice ledgers, and dictionary tables.</summary>
 public interface IExcelService
 {
     Task<List<ExtractedVehicleFields>> ImportVehiclesAsync(string filePath, CancellationToken ct = default);
     Task ExportInvoicesAsync(IEnumerable<Invoice> invoices, string filePath, CancellationToken ct = default);
     Task ExportVehiclesAsync(IEnumerable<Vehicle> vehicles, string filePath, CancellationToken ct = default);
+
+    Task ExportChassisLookupsAsync(IEnumerable<ChassisCodeLookup> rows, string filePath, CancellationToken ct = default);
+    Task<DictionaryImportResult> ImportChassisLookupsAsync(string filePath, IChassisLookupRepository repo, CancellationToken ct = default);
+    Task ExportGlossaryAsync(IEnumerable<JapaneseTermGlossary> rows, string filePath, CancellationToken ct = default);
+    Task<DictionaryImportResult> ImportGlossaryAsync(string filePath, IGlossaryRepository repo, CancellationToken ct = default);
+    Task ExportBankProfilesAsync(IEnumerable<BankProfile> rows, string filePath, CancellationToken ct = default);
+    Task<DictionaryImportResult> ImportBankProfilesAsync(string filePath, IBankProfileRepository repo, CancellationToken ct = default);
+    void WriteChassisLookupSampleTemplate(string filePath);
+}
+
+/// <summary>Summary for dictionary Excel upserts.</summary>
+public class DictionaryImportResult
+{
+    public int Inserted { get; set; }
+    public int Updated { get; set; }
+    public int Skipped { get; set; }
+    public string Summary => $"Imported {Inserted} new, updated {Updated} existing"
+                             + (Skipped > 0 ? $", skipped {Skipped}" : string.Empty);
 }
 
 /// <summary>Generates Word .docx invoices from a MiniWord template.</summary>

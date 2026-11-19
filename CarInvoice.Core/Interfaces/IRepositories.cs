@@ -34,12 +34,20 @@ public interface IInvoiceRepository : IRepository<Invoice>
 public interface IChassisLookupRepository : IRepository<ChassisCodeLookup>
 {
     Task<ChassisCodeLookup?> FindByCodeAsync(string chassisCode, CancellationToken ct = default);
+    Task<List<ChassisCodeLookup>> FindAllByCodeAsync(string chassisCode, CancellationToken ct = default);
+    Task<ChassisCodeLookup?> FindExactAsync(string chassisCode, string make, string model, string? serialPrefixOrRange = null, CancellationToken ct = default);
 }
 
 public interface IGlossaryRepository : IRepository<JapaneseTermGlossary>
 {
     Task<JapaneseTermGlossary?> FindByJapaneseTermAsync(string term, CancellationToken ct = default);
     Task<List<JapaneseTermGlossary>> GetAllOrderedAsync(CancellationToken ct = default);
+}
+
+public interface IBankProfileRepository : IRepository<BankProfile>
+{
+    Task<BankProfile?> GetDefaultAsync(CancellationToken ct = default);
+    Task<List<BankProfile>> GetAllOrderedAsync(CancellationToken ct = default);
 }
 
 public interface IUnitOfWork : IAsyncDisposable
@@ -49,5 +57,6 @@ public interface IUnitOfWork : IAsyncDisposable
     IInvoiceRepository Invoices { get; }
     IChassisLookupRepository ChassisLookups { get; }
     IGlossaryRepository Glossary { get; }
+    IBankProfileRepository BankProfiles { get; }
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

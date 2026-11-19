@@ -41,6 +41,99 @@ namespace CarInvoice.Data.Migrations
                     b.ToTable("AppSettings", (string)null);
                 });
 
+            modelBuilder.Entity("CarInvoice.Core.Entities.BankProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AccountHolderName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BranchAddress")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BranchCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BranchName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IntermediaryBankName")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IntermediaryBranch")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IntermediaryCountry")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IntermediarySwiftCode")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProfileName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SwiftCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsDefault");
+
+                    b.HasIndex("ProfileName");
+
+                    b.ToTable("BankProfiles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AccountHolderName = "MDK CORPORATION CO. LTD",
+                            AccountNumber = "0043215",
+                            BankName = "MUFG Bank, Ltd.",
+                            BranchAddress = "KANAZAWA (0005), KANAZAWASHI ISHIKAWA, JAPAN",
+                            BranchCode = "0005",
+                            BranchName = "Kanazawa",
+                            IntermediaryBankName = "MUFG Bank, Ltd.",
+                            IntermediaryBranch = "Mitsubishi Newyork Branch",
+                            IntermediaryCountry = "Newyork, USA",
+                            IntermediarySwiftCode = "BOTKUS33",
+                            IsDefault = true,
+                            ProfileName = "MUFG Bank Kanazawa (Default)",
+                            SwiftCode = "BOTKJPJT"
+                        });
+                });
+
             modelBuilder.Entity("CarInvoice.Core.Entities.ChassisCodeLookup", b =>
                 {
                     b.Property<int>("Id")
@@ -52,8 +145,19 @@ namespace CarInvoice.Data.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("DefaultBodyType")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DefaultDoors")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("DefaultEngineCc")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("DefaultEngineNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("DefaultFuelType")
                         .IsRequired()
@@ -70,9 +174,22 @@ namespace CarInvoice.Data.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("DefaultSeats")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SerialPrefixOrRange")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ChassisCode")
+                    b.HasIndex("ChassisCode");
+
+                    b.HasIndex("ChassisCode", "DefaultMake", "DefaultModel", "SerialPrefixOrRange")
                         .IsUnique();
 
                     b.ToTable("ChassisCodeLookups", (string)null);
@@ -163,10 +280,13 @@ namespace CarInvoice.Data.Migrations
                         {
                             Id = 10,
                             ChassisCode = "KSP130",
+                            DefaultBodyType = "HATCHBACK",
+                            DefaultDoors = 5,
                             DefaultEngineCc = 1000,
-                            DefaultFuelType = "Petrol",
-                            DefaultMake = "Toyota",
-                            DefaultModel = "Vitz"
+                            DefaultFuelType = "PETROL",
+                            DefaultMake = "TOYOTA",
+                            DefaultModel = "VITZ",
+                            Notes = "Vitz / Yaris hatchback"
                         },
                         new
                         {
@@ -392,6 +512,31 @@ namespace CarInvoice.Data.Migrations
                             DefaultFuelType = "Hybrid",
                             DefaultMake = "Honda",
                             DefaultModel = "Insight"
+                        },
+                        new
+                        {
+                            Id = 36,
+                            ChassisCode = "VR2E26",
+                            DefaultBodyType = "MINI BUS",
+                            DefaultDoors = 5,
+                            DefaultEngineCc = 2000,
+                            DefaultEngineNumber = "QR20",
+                            DefaultFuelType = "PETROL",
+                            DefaultMake = "NISSAN",
+                            DefaultModel = "CARAVAN",
+                            DefaultSeats = 6
+                        },
+                        new
+                        {
+                            Id = 37,
+                            ChassisCode = "KSP130",
+                            DefaultBodyType = "VAN",
+                            DefaultDoors = 5,
+                            DefaultEngineCc = 1300,
+                            DefaultFuelType = "PETROL",
+                            DefaultMake = "TOYOTA",
+                            DefaultModel = "PROBOX",
+                            Notes = "Also 1000cc / WAGON variants; serial ranges may differ by market"
                         });
                 });
 
@@ -451,6 +596,17 @@ namespace CarInvoice.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("BankProfileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConsigneeAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConsigneeName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -459,10 +615,18 @@ namespace CarInvoice.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(8)
                         .HasColumnType("TEXT")
-                        .HasDefaultValue("PKR");
+                        .HasDefaultValue("USD");
 
                     b.Property<int>("CustomerId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("DestinationCountry")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DestinationPort")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("GeneratedDocPath")
                         .HasMaxLength(1000)
@@ -476,6 +640,9 @@ namespace CarInvoice.Data.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsConsigneeSameAsCustomer")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsDraft")
                         .HasColumnType("INTEGER");
 
@@ -486,6 +653,10 @@ namespace CarInvoice.Data.Migrations
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
                         .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PriceAmount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("SalePrice")
@@ -500,10 +671,19 @@ namespace CarInvoice.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TradeTerm")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("C & F");
+
                     b.Property<int>("VehicleId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BankProfileId");
 
                     b.HasIndex("CustomerId");
 
@@ -1078,6 +1258,10 @@ namespace CarInvoice.Data.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("BodyType")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ChassisCode")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -1088,8 +1272,18 @@ namespace CarInvoice.Data.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("USED");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("Doors")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int?>("EngineCapacityCc")
                         .HasColumnType("INTEGER");
@@ -1104,8 +1298,10 @@ namespace CarInvoice.Data.Migrations
 
                     b.Property<string>("FuelType")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(32)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("PETROL");
 
                     b.Property<string>("FullChassisNormalized")
                         .IsRequired()
@@ -1136,7 +1332,7 @@ namespace CarInvoice.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(16)
                         .HasColumnType("TEXT")
-                        .HasDefaultValue("km");
+                        .HasDefaultValue("KM");
 
                     b.Property<string>("Model")
                         .IsRequired()
@@ -1146,10 +1342,27 @@ namespace CarInvoice.Data.Migrations
                     b.Property<int?>("RegistrationYear")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("Seats")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Steering")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("RHD");
+
+                    b.Property<string>("StockNumber")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Transmission")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("UnladenWeightKg")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -1163,6 +1376,8 @@ namespace CarInvoice.Data.Migrations
 
                     b.HasIndex("FullChassisNormalized");
 
+                    b.HasIndex("StockNumber");
+
                     b.HasIndex("Make", "Model");
 
                     b.ToTable("Vehicles", (string)null);
@@ -1170,6 +1385,11 @@ namespace CarInvoice.Data.Migrations
 
             modelBuilder.Entity("CarInvoice.Core.Entities.Invoice", b =>
                 {
+                    b.HasOne("CarInvoice.Core.Entities.BankProfile", "BankProfile")
+                        .WithMany("Invoices")
+                        .HasForeignKey("BankProfileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("CarInvoice.Core.Entities.Customer", "Customer")
                         .WithMany("Invoices")
                         .HasForeignKey("CustomerId")
@@ -1182,9 +1402,16 @@ namespace CarInvoice.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("BankProfile");
+
                     b.Navigation("Customer");
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("CarInvoice.Core.Entities.BankProfile", b =>
+                {
+                    b.Navigation("Invoices");
                 });
 
             modelBuilder.Entity("CarInvoice.Core.Entities.Customer", b =>

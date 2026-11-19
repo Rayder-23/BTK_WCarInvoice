@@ -18,7 +18,17 @@ public static class SeedData
         new() { ChassisCode = "ZVW51", DefaultMake = "Toyota", DefaultModel = "Prius", DefaultEngineCc = 1800, DefaultFuelType = "Hybrid" },
         new() { ChassisCode = "NHP10", DefaultMake = "Toyota", DefaultModel = "Aqua", DefaultEngineCc = 1500, DefaultFuelType = "Hybrid" },
         new() { ChassisCode = "NHP10H", DefaultMake = "Toyota", DefaultModel = "Aqua", DefaultEngineCc = 1500, DefaultFuelType = "Hybrid" },
-        new() { ChassisCode = "KSP130", DefaultMake = "Toyota", DefaultModel = "Vitz", DefaultEngineCc = 1000, DefaultFuelType = "Petrol" },
+        new()
+        {
+            ChassisCode = "KSP130",
+            DefaultMake = "TOYOTA",
+            DefaultModel = "VITZ",
+            DefaultEngineCc = 1000,
+            DefaultFuelType = "PETROL",
+            DefaultBodyType = "HATCHBACK",
+            DefaultDoors = 5,
+            Notes = "Vitz / Yaris hatchback"
+        },
         new() { ChassisCode = "NSP130", DefaultMake = "Toyota", DefaultModel = "Vitz", DefaultEngineCc = 1300, DefaultFuelType = "Petrol" },
         new() { ChassisCode = "NCP131", DefaultMake = "Toyota", DefaultModel = "Vitz", DefaultEngineCc = 1500, DefaultFuelType = "Petrol" },
         new() { ChassisCode = "ZRR80", DefaultMake = "Toyota", DefaultModel = "Voxy", DefaultEngineCc = 2000, DefaultFuelType = "Petrol" },
@@ -44,6 +54,50 @@ public static class SeedData
         new() { ChassisCode = "RU3", DefaultMake = "Honda", DefaultModel = "Vezel", DefaultEngineCc = 1500, DefaultFuelType = "Hybrid" },
         new() { ChassisCode = "RU1", DefaultMake = "Honda", DefaultModel = "Vezel", DefaultEngineCc = 1500, DefaultFuelType = "Petrol" },
         new() { ChassisCode = "ZE2", DefaultMake = "Honda", DefaultModel = "Insight", DefaultEngineCc = 1300, DefaultFuelType = "Hybrid" },
+        new()
+        {
+            ChassisCode = "VR2E26",
+            DefaultMake = "NISSAN",
+            DefaultModel = "CARAVAN",
+            DefaultEngineCc = 2000,
+            DefaultFuelType = "PETROL",
+            DefaultBodyType = "MINI BUS",
+            DefaultDoors = 5,
+            DefaultSeats = 6,
+            DefaultEngineNumber = "QR20"
+        },
+        // Shared chassis code — multi-model picker demo (same code as VITZ above).
+        new()
+        {
+            ChassisCode = "KSP130",
+            DefaultMake = "TOYOTA",
+            DefaultModel = "PROBOX",
+            DefaultEngineCc = 1300,
+            DefaultFuelType = "PETROL",
+            DefaultBodyType = "VAN",
+            DefaultDoors = 5,
+            Notes = "Also 1000cc / WAGON variants; serial ranges may differ by market"
+        },
+    };
+
+    public static IReadOnlyList<BankProfile> BankProfiles { get; } = new List<BankProfile>
+    {
+        new()
+        {
+            ProfileName = "MUFG Bank Kanazawa (Default)",
+            IsDefault = true,
+            BankName = "MUFG Bank, Ltd.",
+            AccountHolderName = "MDK CORPORATION CO. LTD",
+            AccountNumber = "0043215",
+            BranchName = "Kanazawa",
+            BranchCode = "0005",
+            BranchAddress = "KANAZAWA (0005), KANAZAWASHI ISHIKAWA, JAPAN",
+            SwiftCode = "BOTKJPJT",
+            IntermediaryBankName = "MUFG Bank, Ltd.",
+            IntermediaryCountry = "Newyork, USA",
+            IntermediaryBranch = "Mitsubishi Newyork Branch",
+            IntermediarySwiftCode = "BOTKUS33"
+        }
     };
 
     public static IReadOnlyList<JapaneseTermGlossary> GlossaryTerms { get; } = new List<JapaneseTermGlossary>

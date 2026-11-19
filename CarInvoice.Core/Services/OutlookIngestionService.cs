@@ -24,17 +24,32 @@ public sealed class OutlookIngestionService : IOutlookIngestionService
 
     private static readonly (string Name, Regex Pattern)[] FieldPatterns =
     {
+        ("StockNo", new Regex(@"(?:stock\s*(?:no\.?|#|number)|ストック)[:\s#]*([A-Z0-9\-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
         ("Chassis", new Regex(@"(?:chassis|車台番号|frame\s*no\.?|chassis\s*no\.?)[:\s#]*([A-Z0-9\-\s]{6,30})", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
         ("Make", new Regex(@"(?:make|maker|メーカー)[:\s]+([A-Za-z\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
         ("Model", new Regex(@"(?:model|車名|車種)[:\s]+([A-Za-z0-9\-\s\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
         ("Year", new Regex(@"(?:year|年式|model\s*year)[:\s]*((?:19|20)\d{2})", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
-        ("Mileage", new Regex(@"(?:mileage|走行距離|odometer|km)[:\s]*([\d,]+)\s*(?:km|miles|キロ)?", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
-        ("Color", new Regex(@"(?:color|colour|色|外装色)[:\s]+([A-Za-z\s\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
-        ("Price", new Regex(@"(?:price|amount|売価|価格|FOB)[:\s]*[¥$€]?\s*([\d,]+(?:\.\d+)?)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
-        ("Customer", new Regex(@"(?:customer|buyer|client|お客様|買主)[:\s]+([A-Za-z\s\.\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Mileage", new Regex(@"(?:mileage|走行距離|odometer|odo)[:\s]*([\d,]+)\s*(?:km|miles|キロ)?", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Color", new Regex(@"(?:color|colour|色|外装色)[:\s]+([A-Za-z0-9\s\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("EngineCc", new Regex(@"(?:engine\s*(?:cc|capacity)|排気量|(?<![A-Za-z])CC)[:\s]*([\d,]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Price", new Regex(@"(?:c\s*&\s*f|c&f|fob|cif|price|amount|売価|価格)[:\s]*[¥$€]?\s*([\d,]+(?:\.\d+)?)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("TradeTerm", new Regex(@"\b(C\s*&\s*F|C&F|FOB|CIF)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Customer", new Regex(@"(?:customer|buyer|client|お客様|買主)[:\s]+([A-Za-z0-9\s&\.,'\-\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("CustomerAddress", new Regex(@"(?:customer\s*address|buyer\s*address|address)[:\s]+([A-Za-z0-9\s,\.\-/#]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Consignee", new Regex(@"(?:consignee)[:\s]+([A-Za-z0-9\s&\.,'\-\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("ConsigneeAddress", new Regex(@"(?:consignee\s*address)[:\s]+([A-Za-z0-9\s,\.\-/#]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Port", new Regex(@"(?:destination\s*port|port\s*of\s*discharge|port)[:\s]+([A-Za-z\s\-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Country", new Regex(@"(?:destination\s*country|country)[:\s]+([A-Za-z\s\-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
         ("Grade", new Regex(@"(?:auction\s*grade|評価点|grade)[:\s]*([0-9]\.?[0-9]?|R|RA|S)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
-        ("Fuel", new Regex(@"(?:fuel|燃料)[:\s]+([A-Za-z\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Fuel", new Regex(@"(?:fuel(?:\s*type)?|燃料)[:\s]+([A-Za-z\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
         ("Transmission", new Regex(@"(?:transmission|シフト|ミッション)[:\s]+([A-Za-z0-9\u3040-\u30FF\u4E00-\u9FFF]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Doors", new Regex(@"(?:doors?|ドア)[:\s]*(\d{1,2})", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Seats", new Regex(@"(?:seats?|seat|座席)[:\s]*(\d{1,2})", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Condition", new Regex(@"(?:condition|状態)[:\s]+(USED|NEW|中古|新車)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Steering", new Regex(@"(?:steering|ハンドル)[:\s]*(RHD|LHD|RIGHT|LEFT)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("EngineNo", new Regex(@"(?:engine\s*no\.?|engine\s*number|エンジン番号)[:\s#]*([A-Z0-9\-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("Body", new Regex(@"(?:body(?:\s*type)?|ボディ)[:\s]+([A-Za-z\s\-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+        ("UnladenWeight", new Regex(@"(?:unladen\s*weight|curb\s*weight|車両重量)[:\s]*([\d,]+)\s*(?:kg)?", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
     };
 
     private static readonly Regex JapaneseBlockRegex = new(@"[\u3040-\u30FF\u4E00-\u9FFF]{2,}", RegexOptions.Compiled);
@@ -267,6 +282,7 @@ public sealed class OutlookIngestionService : IOutlookIngestionService
             var value = m.Groups[1].Value.Trim().TrimEnd(',', '.', ';');
             switch (name)
             {
+                case "StockNo": fields.StockNumber = value; break;
                 case "Chassis":
                     fields.ChassisNumber = value;
                     break;
@@ -278,16 +294,49 @@ public sealed class OutlookIngestionService : IOutlookIngestionService
                     if (int.TryParse(miles, out var km)) fields.Mileage = km;
                     break;
                 case "Color": fields.Color = value; break;
+                case "EngineCc":
+                    if (int.TryParse(value.Replace(",", ""), out var cc)) fields.EngineCc = cc;
+                    break;
                 case "Price":
                     var price = value.Replace(",", "");
                     if (decimal.TryParse(price, out var p)) fields.Price = p;
                     break;
+                case "TradeTerm":
+                    fields.TradeTerm = NormalizeTradeTerm(value);
+                    break;
                 case "Customer": fields.CustomerName = value; break;
+                case "CustomerAddress": fields.CustomerAddress = value; break;
+                case "Consignee": fields.ConsigneeName = value; break;
+                case "ConsigneeAddress": fields.ConsigneeAddress = value; break;
+                case "Port": fields.DestinationPort = value.ToUpperInvariant(); break;
+                case "Country": fields.DestinationCountry = value.ToUpperInvariant(); break;
                 case "Grade": fields.AuctionGrade = value.ToUpperInvariant(); break;
-                case "Fuel": fields.FuelType = value; break;
+                case "Fuel": fields.FuelType = value.ToUpperInvariant(); break;
                 case "Transmission": fields.Transmission = value; break;
+                case "Doors" when int.TryParse(value, out var doors): fields.Doors = doors; break;
+                case "Seats" when int.TryParse(value, out var seats): fields.Seats = seats; break;
+                case "Condition":
+                    fields.Condition = value.Contains("新", StringComparison.Ordinal) ||
+                                       value.Equals("NEW", StringComparison.OrdinalIgnoreCase)
+                        ? "NEW" : "USED";
+                    break;
+                case "Steering":
+                    fields.Steering = value.StartsWith("L", StringComparison.OrdinalIgnoreCase) ? "LHD" : "RHD";
+                    break;
+                case "EngineNo": fields.EngineNumber = value.ToUpperInvariant(); break;
+                case "Body": fields.BodyType = value.ToUpperInvariant(); break;
+                case "UnladenWeight":
+                    if (int.TryParse(value.Replace(",", ""), out var uw)) fields.UnladenWeightKg = uw;
+                    break;
             }
         }
+
+        if (string.IsNullOrWhiteSpace(fields.ConsigneeName) && !string.IsNullOrWhiteSpace(fields.CustomerName))
+            fields.ConsigneeName = fields.CustomerName;
+        if (string.IsNullOrWhiteSpace(fields.ConsigneeAddress) && !string.IsNullOrWhiteSpace(fields.CustomerAddress))
+            fields.ConsigneeAddress = fields.CustomerAddress;
+        if (string.IsNullOrWhiteSpace(fields.TradeTerm) && fields.Price is > 0)
+            fields.TradeTerm = "C & F";
 
         var jpBlocks = JapaneseBlockRegex.Matches(text)
             .Select(m => m.Value)
@@ -297,6 +346,18 @@ public sealed class OutlookIngestionService : IOutlookIngestionService
             fields.JapaneseRemarks = string.Join(" / ", jpBlocks);
 
         return fields;
+    }
+
+    private static string NormalizeTradeTerm(string value)
+    {
+        var compact = Regex.Replace(value, @"\s+", "").ToUpperInvariant();
+        return compact switch
+        {
+            "C&F" => "C & F",
+            "FOB" => "FOB",
+            "CIF" => "CIF",
+            _ => value.Trim().ToUpperInvariant()
+        };
     }
 
     private async Task<EmailIngestionResult> ParseEmlFileAsync(string filePath, CancellationToken ct)
@@ -379,6 +440,11 @@ public sealed class OutlookIngestionService : IOutlookIngestionService
             fields.Make ??= parsed.SuggestedMake;
             fields.Model ??= parsed.SuggestedModel;
             fields.FuelType ??= parsed.SuggestedFuelType;
+            fields.EngineCc ??= parsed.SuggestedEngineCc;
+            fields.BodyType ??= parsed.SuggestedBodyType;
+            fields.Doors ??= parsed.SuggestedDoors;
+            fields.Seats ??= parsed.SuggestedSeats;
+            fields.EngineNumber ??= parsed.SuggestedEngineNumber;
         }
 
         if (!string.IsNullOrWhiteSpace(fields.JapaneseRemarks))
